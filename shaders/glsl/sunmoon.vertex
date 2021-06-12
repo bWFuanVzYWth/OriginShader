@@ -1,0 +1,23 @@
+#version 300 es
+#pragma optimize(on)
+precision highp float;
+
+#include "vertexVersionCentroidUV.h"
+#include "uniformPerFrameConstants.h"
+#include "uniformWorldConstants.h"
+
+attribute POS4 POSITION;
+
+flat varying float t;
+
+varying vec4 skypos;
+
+#include "shaderfunction.lin"
+
+void main()
+{
+	t = fogtime(FOG_COLOR);
+
+	gl_Position = WORLD[1].y < 0.0 ? vec4(2.0) : vec4(POSITION.xz * 2.0, 0.999999, 1.0);
+	skypos = WORLD * (inverse_mat4(WORLDVIEWPROJ) * gl_Position);
+}

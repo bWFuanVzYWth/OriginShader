@@ -1,0 +1,43 @@
+#version 300 es
+#pragma optimize(on)
+precision highp float;
+
+#include "fragmentVersionCentroid.h"
+
+flat varying float t;
+
+varying vec4 skypos;
+
+#include "uniformWorldConstants.h"
+#include "uniformShaderConstants.h"
+#include "util.h"
+
+LAYOUT_BINDING(0) uniform sampler2D TEXTURE_0;
+
+#include "shaderfunction.lin"
+
+void main()
+{
+	vec4 outcol = vec4(1.0);
+
+	vec3 skyvec = normalize(skypos.xyz);
+	vec3 campos = vec3(0.0, EARTH_R + ELEVATION, 0.0);
+	
+	vec3 orisunlig;
+	vec3 sunvec;
+	vec3 sunlig;
+
+#if TIMESYSTEM == 1
+	setsunlig(t, campos, orisunlig, sunlig, sunvec);
+#elif TIMESYSTEM == 2
+	vec4 texcol = texture2D(TEXTURE_0, vec2(0.5));
+	sunvec = normalize(WORLD[1].xyz);
+	orisunlig = texcol.r > 0.999 ? gamma2line(SUNCOL) * SUNLIGHT_A : gamma2line(MOOCOL) * MOOLIGHT_A;
+#endif
+
+	vec3 skylig = skyrender(campos, skyvec, orisunlig, sunvec, gl_FragCoord);
+
+	outcol.rgb = lig2col(skylig);
+
+	gl_FragColor = outcol;
+}

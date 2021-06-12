@@ -1,0 +1,102 @@
+//debug
+
+#define DEBUG 0
+
+
+
+
+
+//基础选项
+#define TIMESYSTEM 1
+//1 天空同步地面但不准确
+//2 天空准确但不同步地面
+
+
+#define SUNCOL vec3(1.0000, 1.0000, 1.0000)
+#define SUNLIGHT_A 12.5
+//R G B 阳光的颜色,范围0-1,最多6位有效数字
+//A 阳光的物理亮度,范围任何正数,数字越大越亮
+
+#define MOOCOL vec3(0.8289, 0.8527, 1.0000)
+#define MOOLIGHT_A 0.5
+//R G B 月光的颜色,范围0-1,最多6位有效数字
+//A 月光的物理亮度,范围任何正数,数字越大越亮
+
+#define POICOL vec3(1.0000, 0.4970, 0.1879)
+#define POILIGHT_A 50.0
+//R G B 灯光的颜色,范围0-1,最多6位有效数字
+//A 距离灯光1格处的物理亮度,范围任何正数,数字越大越亮
+
+
+
+#define SOFTSHADOW 0.02
+//阴影软化宽度,数字越大宽度越大
+
+
+
+#define TONEMAP 2
+//0 不使用tonemap，可能导致过曝
+//1 ACESToneMapping，色彩较鲜艳
+//2 FilmicToneMapping，色彩较柔和
+
+#define LUM 1.0
+//全局亮度,也可以理解成相机的感光度之类的东西
+
+
+
+#define SUN_R 0.05
+//太阳的半径，单位为弧度
+//不影响地面亮度，但是会影响太阳本身的亮度
+
+
+
+#define SAMNUM 2.0
+//物理天空中阳光方向的采样数
+#define MARNUM 2.5
+//物理天空中视线方向的采样数
+#define AUTO_MARCH_NUM 1
+//视线方向的采样数将由程序在设置的基础上自动调整，此时的采样数仅作为质量参数，可以获得更高的天空质量（实验性选项，默认开启）
+
+#define O3 (0.0045 * vec3(3.426, 8.298, 0.356) * 0.06)
+//臭氧，暂未加入
+#define LR (0.0045 * vec3(0.580, 1.35, 3.31) + O3)
+//瑞利散射强度
+#define LM (0.150 * vec3(0.2))
+//米散射强度
+
+#define G 0.75
+//米散射相位函数G参数值
+
+
+
+
+
+//想清楚你自己在做什么，否则最好别修改以下参数
+
+#define HR 8.0
+//瑞利散射放缩高度，单位为km
+#define HM 1.2
+//米散射放缩高度，单位为km
+
+#define EARTH_R 6371.0
+#define ELEVATION 1.5
+//地球半径，用于大气层建模，单位为km
+//默认海拔，用于大气层建模，单位为km
+
+
+
+#define FAST_MATH 0
+//使用更快但是精度更低的数学函数（实验性选项，默认关闭）
+//请注意这个选项并不能从根本上提升性能，甚至可能导致某些设备出现错误
+
+
+
+#define MOBILE 1
+//是否在手机上运行
+
+#define FAST_PERLIN 1
+//仅使用一阶导平滑的perlin noise
+#define FAST_VALUE 1
+//仅使用一阶导平滑的的value noise
+#define FAST_VORO 0
+//仅使用四晶格采样的voronoi noise

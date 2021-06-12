@@ -1,0 +1,114 @@
+#version 300 es
+#pragma optimize(on)
+precision highp float;
+
+#include "fragmentVersionCentroid.h"
+
+#if __VERSION__ >= 300
+	#ifndef BYPASS_PIXEL_SHADER
+		#if defined(TEXEL_AA) && defined(TEXEL_AA_FEATURE)
+			_centroid in highp vec2 uv0;
+			_centroid in highp vec2 uv1;
+		#else
+			_centroid in vec2 uv0;
+			_centroid in vec2 uv1;
+		#endif
+	#endif
+#else
+	#ifndef BYPASS_PIXEL_SHADER
+		varying vec2 uv0;
+		varying vec2 uv1;
+	#endif
+#endif
+
+#ifndef BYPASS_PIXEL_SHADER
+	flat varying vec3 orisunlig;
+	flat varying vec3 sunlig;
+	flat varying vec3 sunvec;
+
+	varying vec3 envlig;
+
+	varying vec4 col;
+	varying vec4 varcol;
+
+	varying vec3 outsca;
+	varying vec3 insca;
+
+	varying vec4 worpos;
+	varying vec4 chupos;
+#endif
+
+#include "uniformShaderConstants.h"
+
+#include "util.h"
+
+LAYOUT_BINDING(3) uniform sampler2D TEXTURE_0;
+LAYOUT_BINDING(4) uniform sampler2D TEXTURE_1;
+LAYOUT_BINDING(5) uniform sampler2D TEXTURE_2;
+
+#include "shaderfunction.lin"
+
+void main()
+{
+#ifdef BYPASS_PIXEL_SHADER
+	return;
+#else 
+
+#ifdef SEASONS
+	bool seasons = true;
+#else
+	bool seasons = false;
+#endif
+
+#ifdef BLEND
+	bool blend = true;
+#else 
+	bool blend = false;
+#endif
+
+#if USE_TEXEL_AA
+	vec4 texcol = texture2D_AA(TEXTURE_0, uv0);
+#else
+	vec4 texcol = texture2D(TEXTURE_0, uv0);
+#endif
+
+#if USE_ALPHA_TEST && !defined(SEASONS_FAR)
+#ifdef ALPHA_TO_COVERAGE
+	#define ALPHA_THRESHOLD 0.05
+#else
+	#define ALPHA_THRESHOLD 0.50
+#endif
+	if(texcol.a < ALPHA_THRESHOLD)
+		discard;
+#endif
+
+#ifdef SEASONS
+	vec4 varCol = vec4(mix(vec3(1.0), texture2D(TEXTURE_2, col.xy).rgb * 2.0, col.b), col.a);
+#else
+	vec4 varCol = varcol;
+#endif
+
+	vec4 outcol = vec4(0.5, 0.5, 0.5, 1.0);
+
+	vec3 wornor = normalize(cross(dFdx(worpos).xyz, dFdy(worpos).xyz));
+
+	vec3 poilig = getpoilig(uv1);
+
+	texcol.rgb = gamma2line(texcol.rgb * varCol.rgb);
+//	texcol.rgb = vec3(1.0);
+
+	vec3 sundif = Diffuse_Lambert(texcol.rgb) * sunlig * getshadow(uv1, varCol) * max(dot(sunvec, wornor),0.0);
+	vec3 envdif = Diffuse_Lambert(texcol.rgb) * envlig;
+	vec3 poidif = Diffuse_Lambert(texcol.rgb) * poilig;
+	
+	vec3 mixlig = poidif + sundif + envdif;
+	
+	mixlig = mixlig * outsca + orisunlig * insca;
+
+	outcol.rgb = lig2col(mixlig);
+	outcol.a = texcol.a;
+	
+	gl_FragColor = outcol;
+
+#endif
+}

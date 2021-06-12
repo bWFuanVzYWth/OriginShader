@@ -1,0 +1,18 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "交流1群:1090829462",
+        "name": "Origin Shader 3.1.1",
+        "uuid": "0575c61f-a5da-4b7f-9961-ffda29080306",
+        "version": [ 3, 1, 1 ],
+        "min_engine_version": [ 1, 16, 100 ]
+    },
+    "modules": [
+        {
+            "description": "",
+            "type": "resources",
+            "uuid": "53644fac-a276-42e5-843f-a3c6f1690306",
+            "version": [ 3, 1, 1 ]
+        }
+    ]
+}

@@ -1,0 +1,90 @@
+#version 300 es
+#pragma optimize(on)
+precision highp float;
+
+#include "vertexVersionCentroid.h"
+
+#if __VERSION__ >= 300
+	#ifndef BYPASS_PIXEL_SHADER
+		_centroid out vec2 uv0;
+		_centroid out vec2 uv1;
+	#endif
+#else
+	#ifndef BYPASS_PIXEL_SHADER
+		varying vec2 uv0;
+		varying vec2 uv1;
+	#endif
+#endif
+
+#ifndef BYPASS_PIXEL_SHADER
+	flat varying vec3 orisunlig;
+	flat varying vec3 sunlig;
+	flat varying vec3 sunvec;
+
+	varying vec3 envlig;
+
+	varying vec4 col;
+	varying vec4 varcol;
+
+	varying vec3 outsca;
+	varying vec3 insca;
+
+	varying vec4 worpos;
+	varying vec4 chupos;
+#endif
+
+#include "uniformWorldConstants.h"
+#include "uniformPerFrameConstants.h"
+#include "uniformShaderConstants.h"
+#include "uniformRenderChunkConstants.h"
+
+#include "util.h"
+
+attribute POS4 POSITION;
+attribute vec4 COLOR;
+attribute vec2 TEXCOORD_0;
+attribute vec2 TEXCOORD_1;
+
+#include "shaderfunction.lin"
+
+LAYOUT_BINDING(0) uniform sampler2D TEXTURE_0;
+LAYOUT_BINDING(1) uniform sampler2D TEXTURE_1;
+LAYOUT_BINDING(2) uniform sampler2D TEXTURE_2;
+
+void main()
+{
+	chupos = POSITION;
+#ifdef AS_ENTITY_RENDERER
+	worpos = POSITION;
+#else
+	worpos = vec4(POSITION.xyz * CHUNK_ORIGIN_AND_SCALE.w + CHUNK_ORIGIN_AND_SCALE.xyz, 1.0);
+#endif
+
+	gl_Position = WORLDVIEWPROJ * worpos;
+
+#ifndef BYPASS_PIXEL_SHADER
+	uv0 = TEXCOORD_0;
+	uv1 = TEXCOORD_1;
+
+	col = COLOR;
+
+#ifndef SEASONS
+	varcol = getvarcol(COLOR);
+#else
+	varcol = COLOR;
+//	varcol = vec4(mix(vec3(1.0), texture2D(TEXTURE_1, col.xy).rgb * 2.0, col.b), col.a);
+#endif
+
+	float t = fogtime(FOG_COLOR);
+	highp vec3 campos = vec3(0.0,EARTH_R + ELEVATION,0.0);
+
+	setsunlig(t, campos, orisunlig, sunlig, sunvec);
+	setfog(outsca, insca, campos + worpos.xyz * (1.0 / 16.0), campos, orisunlig, sunvec, uv1);
+	envlig = getenvlig(uv1, sunlig, orisunlig, campos, sunvec, varcol.a);
+
+#if !defined(FOG) && 0
+	varcol.rgb += FOG_COLOR.rgb * 0.000001;
+#endif
+#endif
+
+}
