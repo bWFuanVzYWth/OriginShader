@@ -558,7 +558,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 	{
 		//第零个采样点的步进距离为0，只需计算阳光方向的光程
 		vec2 adorigin = atmads(marpos, sunvec, adm1);
-		vec3 odorigin = LR * adorigin.x + LM * adorigin.y;
+		vec3 odorigin = (LR + O3) * adorigin.x + LM * adorigin.y;
 
 		expodr1 = exp(-odorigin) * adm1.x;
 		expodm1 = exp(-odorigin) * adm1.y;
@@ -592,7 +592,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 			vec2 adssum = atmads(marpos, sunvec, adm1);
 
 			vec2 ad = adssum + admsum;
-			vec3 od = LR * ad.x + LM * ad.y;
+			vec3 od = (LR + O3) * ad.x + LM * ad.y;
 
 			expodr0 = expodr1;
 			expodr1 = exp(-od) * adm1.x;
@@ -613,7 +613,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 	setprpm(pr, pm, dot(sunvec, stavec), G);
 
 	vec3 insca = orisunlig * (pr * LR * marsumr + pm * LM * marsumm);
-	vec3 outsca = hitflag ? vec3(0.0) : skylig * exp((-LR) * admsum.x + (-LM) * admsum.y);
+	vec3 outsca = hitflag ? vec3(0.0) : skylig * exp((-(LR + O3)) * admsum.x + (-LM) * admsum.y);
 
 	return outsca + insca;
 }
@@ -641,7 +641,7 @@ void setfog(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunl
 	{
 		//第零个采样点的步进距离为0，只需计算阳光方向的光程
 		vec2 adorigin = atmads(marpos, sunvec, adm1);
-		vec3 odorigin = LR * adorigin.x + LM * adorigin.y;
+		vec3 odorigin = (LR + O3) * adorigin.x + LM * adorigin.y;
 		
 		expodr1 = exp(-odorigin) * adm1.x;
 		expodm1 = exp(-odorigin) * adm1.y;
@@ -663,7 +663,7 @@ void setfog(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunl
 			vec2 adssum = atmads(marpos, sunvec, adm1);
 			
 			vec2 ad = adssum + admsum;
-			vec3 od = LR * ad.x + LM * ad.y;
+			vec3 od = (LR + O3) * ad.x + LM * ad.y;
 			
 			expodr0 = expodr1;
 			expodr1 = exp(-od) * adm1.x;
@@ -684,7 +684,7 @@ void setfog(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunl
 	setprpm(pr, pm, dot(sunvec, stavec), G);
 	
 	insca = uv1.y * (pr * LR * marsumr + pm * LM * marsumm);
-	outsca = exp((-LR) * admsum.x + (-LM) * admsum.y);
+	outsca = exp((-(LR + O3)) * admsum.x + (-LM) * admsum.y);
 }
 
 vec3 getsunlig(vec3 marpos, vec3 orisunlig, vec3 sunvec)
@@ -693,7 +693,7 @@ vec3 getsunlig(vec3 marpos, vec3 orisunlig, vec3 sunvec)
 	{
 		vec2 adm = airden(marpos,EARTH_R,HR,HM);
 		vec2 adorigin = atmads(marpos, sunvec, adm);
-		return orisunlig * exp((-LR) * adorigin.x + (-LM) * adorigin.y);
+		return orisunlig * exp((-(LR + O3)) * adorigin.x + (-LM) * adorigin.y);
 	}
 	else
 		return vec3(0.0);
@@ -767,23 +767,27 @@ vec3 skyrender(vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunvec, vec4 scrpo
 
 void setsunlig(float t, vec3 campos, out vec3 orisunlig, out vec3 sunlig, out vec3 sunvec)
 {
+	const mat3 M = mat3(
+		cos(SUNDEC), 0.0, sin(SUNDEC),
+		0.0, 1.0, 0.0,
+		-sin(SUNDEC), 0.0, cos(SUNDEC) );
 	if(t > -0.02)
 	{
 		sunvec = vec3(cos(t),sin(t),0.0);
 		orisunlig = gamma2line(SUNCOL) * SUNLIGHT_A;
-		sunlig = getsunlig(campos, orisunlig, sunvec);
 	}
 	else
 	{
 		sunvec = -vec3(cos(t),sin(t),0.0);
 		orisunlig = gamma2line(MOOCOL) * MOOLIGHT_A;
-		sunlig = getsunlig(campos, orisunlig, sunvec);
 	}
+	sunvec = M * sunvec;
+	sunlig = getsunlig(campos, orisunlig, sunvec);
 }
 
 vec3 getenvlig(vec2 uv1, vec3 sunlig, vec3 orisunlig, vec3 marpos, vec3 sunvec, float ao)
 {
-	vec3 skylum = (4.0 * MATH_PI) * physicsky(vec3(0.0), marpos, normalize(vec3(0.0,2.0,1.0)), orisunlig, sunvec, vec4(0.0));
+	vec3 skylum = (2.0 * MATH_PI) * physicsky(vec3(0.0), marpos, normalize(vec3(0.0,2.0,1.0)), orisunlig, sunvec, vec4(0.0));
 	vec3 blolum = (sunlig + skylum) * GRAY * exp(-3.0 * (0.9375 - uv1.y));
 	return mix(blolum, skylum, uv1y2lig(uv1.y) * 0.5) * ao;
 }
