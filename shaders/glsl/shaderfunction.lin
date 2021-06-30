@@ -1,33 +1,36 @@
 //不应修改的数学常量，物理常量等
-#define AUTHOR		linlin
-#define MATH_PI		3.141592653589793
-#define MATH_E		2.718281828459045
-#define MATH_PHI	1.618033988749895
-#define MATH_Y		0.577215664901533
-#define GAMMA		2.2
-#define F0			0.04
-#define GRAY		0.18
-#define RGB			vec3(0.7000, 0.5461, 0.4358)
+
+#define AUTHOR linlin
+#define MATH_PI 3.141592653589793
+#define MATH_E 2.718281828459045
+#define MATH_PHI 1.618033988749895
+#define MATH_Y 0.577215664901533
+#define GAMMA 2.2
+#define RGB vec3(0.7000, 0.5461, 0.4358)
 
 #include "Users/Set.txt"
 
 
 
-//test
-
 
 
 //math
+
 float pow3_2(float x)
 {
-//	return pow(x, 3.0/2.0);
+	//return pow(x, 3.0/2.0);
 	return x * sqrt(x);
 }
+
 
 float pow2(float x)
 {
 	return x * x;
 }
+
+vec2 pow2(vec2 x){return x*x;}
+vec3 pow2(vec3 x){return x*x;}
+vec4 pow2(vec4 x){return x*x;}
 
 float pow3(float x)
 {
@@ -46,41 +49,55 @@ float pow5(float x)
 	return x2 * x2 * x;
 }
 
+float min3(vec3 v)
+{
+	return min(min(v.x, v.y), v.z);
+}
+
+float max3(vec3 v)
+{
+	return max(max(v.x, v.y), v.z);
+}
+
 bool equ3(vec3 v)
 {
 #if FAST_MATH
-//	return v.x == v.y && v.y == v.z;
+	//return v.x == v.y && v.y == v.z;
 	return all(v.xy - v.yz);
 #else
-//	return abs(v.x-v.y) < 0.000002 && abs(v.y-v.z) < 0.000002;
+	//return abs(v.x-v.y) < 0.000002 && abs(v.y-v.z) < 0.000002;
 	return all(lessThan(abs(v.xy - v.yz), vec2(0.000002)));
 #endif
 }
 
 float saturate(float x)
 {
-	return clamp(x,0.0,1.0);
+	return clamp(x, 0.0, 1.0);
+}
+
+float veccos(vec3 v1, vec3 v2)
+{
+	//return dot(v1, v2) / (length(v1) * length(v2));
+	return dot(v1, v2) * inversesqrt(dot(v1, v1) * dot(v2, v2));
 }
 
 mat3 inverse_mat3(mat3 m)
 {
-	float Determinant = 
-		  m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2])
-		- m[1][0] * (m[0][1] * m[2][2] - m[2][1] * m[0][2])
-		+ m[2][0] * (m[0][1] * m[1][2] - m[1][1] * m[0][2]);
-	
+	float Determinant =
+		m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2]) - m[1][0] * (m[0][1] * m[2][2] - m[2][1] * m[0][2]) + m[2][0] * (m[0][1] * m[1][2] - m[1][1] * m[0][2]);
+
 	mat3 Inverse;
-	Inverse[0][0] = + (m[1][1] * m[2][2] - m[2][1] * m[1][2]);
-	Inverse[1][0] = - (m[1][0] * m[2][2] - m[2][0] * m[1][2]);
-	Inverse[2][0] = + (m[1][0] * m[2][1] - m[2][0] * m[1][1]);
-	Inverse[0][1] = - (m[0][1] * m[2][2] - m[2][1] * m[0][2]);
-	Inverse[1][1] = + (m[0][0] * m[2][2] - m[2][0] * m[0][2]);
-	Inverse[2][1] = - (m[0][0] * m[2][1] - m[2][0] * m[0][1]);
-	Inverse[0][2] = + (m[0][1] * m[1][2] - m[1][1] * m[0][2]);
-	Inverse[1][2] = - (m[0][0] * m[1][2] - m[1][0] * m[0][2]);
-	Inverse[2][2] = + (m[0][0] * m[1][1] - m[1][0] * m[0][1]);
+	Inverse[0][0] = +(m[1][1] * m[2][2] - m[2][1] * m[1][2]);
+	Inverse[1][0] = -(m[1][0] * m[2][2] - m[2][0] * m[1][2]);
+	Inverse[2][0] = +(m[1][0] * m[2][1] - m[2][0] * m[1][1]);
+	Inverse[0][1] = -(m[0][1] * m[2][2] - m[2][1] * m[0][2]);
+	Inverse[1][1] = +(m[0][0] * m[2][2] - m[2][0] * m[0][2]);
+	Inverse[2][1] = -(m[0][0] * m[2][1] - m[2][0] * m[0][1]);
+	Inverse[0][2] = +(m[0][1] * m[1][2] - m[1][1] * m[0][2]);
+	Inverse[1][2] = -(m[0][0] * m[1][2] - m[1][0] * m[0][2]);
+	Inverse[2][2] = +(m[0][0] * m[1][1] - m[1][0] * m[0][1]);
 	Inverse /= Determinant;
-	
+
 	return Inverse;
 }
 
@@ -89,55 +106,55 @@ mat4 inverse_mat4(mat4 m)
 	float Coef00 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
 	float Coef02 = m[1][2] * m[3][3] - m[3][2] * m[1][3];
 	float Coef03 = m[1][2] * m[2][3] - m[2][2] * m[1][3];
-	
+
 	float Coef04 = m[2][1] * m[3][3] - m[3][1] * m[2][3];
 	float Coef06 = m[1][1] * m[3][3] - m[3][1] * m[1][3];
 	float Coef07 = m[1][1] * m[2][3] - m[2][1] * m[1][3];
-	
+
 	float Coef08 = m[2][1] * m[3][2] - m[3][1] * m[2][2];
 	float Coef10 = m[1][1] * m[3][2] - m[3][1] * m[1][2];
 	float Coef11 = m[1][1] * m[2][2] - m[2][1] * m[1][2];
-	
+
 	float Coef12 = m[2][0] * m[3][3] - m[3][0] * m[2][3];
 	float Coef14 = m[1][0] * m[3][3] - m[3][0] * m[1][3];
 	float Coef15 = m[1][0] * m[2][3] - m[2][0] * m[1][3];
-	
+
 	float Coef16 = m[2][0] * m[3][2] - m[3][0] * m[2][2];
 	float Coef18 = m[1][0] * m[3][2] - m[3][0] * m[1][2];
 	float Coef19 = m[1][0] * m[2][2] - m[2][0] * m[1][2];
-	
+
 	float Coef20 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
 	float Coef22 = m[1][0] * m[3][1] - m[3][0] * m[1][1];
 	float Coef23 = m[1][0] * m[2][1] - m[2][0] * m[1][1];
-	
-	const vec4 SignA = vec4( 1.0, -1.0,  1.0, -1.0);
-	const vec4 SignB = vec4(-1.0,  1.0, -1.0,  1.0);
-	
+
+	const vec4 SignA = vec4(1.0, -1.0, 1.0, -1.0);
+	const vec4 SignB = vec4(-1.0, 1.0, -1.0, 1.0);
+
 	vec4 Fac0 = vec4(Coef00, Coef00, Coef02, Coef03);
 	vec4 Fac1 = vec4(Coef04, Coef04, Coef06, Coef07);
 	vec4 Fac2 = vec4(Coef08, Coef08, Coef10, Coef11);
 	vec4 Fac3 = vec4(Coef12, Coef12, Coef14, Coef15);
 	vec4 Fac4 = vec4(Coef16, Coef16, Coef18, Coef19);
 	vec4 Fac5 = vec4(Coef20, Coef20, Coef22, Coef23);
-	
+
 	vec4 Vec0 = vec4(m[1][0], m[0][0], m[0][0], m[0][0]);
 	vec4 Vec1 = vec4(m[1][1], m[0][1], m[0][1], m[0][1]);
 	vec4 Vec2 = vec4(m[1][2], m[0][2], m[0][2], m[0][2]);
 	vec4 Vec3 = vec4(m[1][3], m[0][3], m[0][3], m[0][3]);
-	
+
 	vec4 Inv0 = SignA * (Vec1 * Fac0 - Vec2 * Fac1 + Vec3 * Fac2);
 	vec4 Inv1 = SignB * (Vec0 * Fac0 - Vec2 * Fac3 + Vec3 * Fac4);
 	vec4 Inv2 = SignA * (Vec0 * Fac1 - Vec1 * Fac3 + Vec3 * Fac5);
 	vec4 Inv3 = SignB * (Vec0 * Fac2 - Vec1 * Fac4 + Vec2 * Fac5);
-	
+
 	mat4 Inverse = mat4(Inv0, Inv1, Inv2, Inv3);
-	
+
 	vec4 Row0 = vec4(Inverse[0][0], Inverse[1][0], Inverse[2][0], Inverse[3][0]);
-	
+
 	float Determinant = dot(m[0], Row0);
-	
+
 	Inverse /= Determinant;
-	
+
 	return Inverse;
 }
 
@@ -146,10 +163,20 @@ mat4 inverse_mat4(mat4 m)
 
 
 //geometry
-float veccos(vec3 v1, vec3 v2)
+
+vec4 maraabb(vec3 o, vec3 v, vec3 a, vec3 b)
 {
-//	return dot(v1, v2) / (length(v1) * length(v2));
-	return dot(v1, v2) * inversesqrt(dot(v1,v1) * dot(v2,v2));
+	vec3 ta = (a - o) / v;
+	vec3 tb = (b - o) / v;
+	vec3 t2 = max(ta, tb);
+	float mint2 = min(min(t2.x, t2.y), t2.z);
+
+#if 0
+	if(mint2 < -0.00001)
+		return vec4(-4.6e18);
+#endif
+
+	return vec4(sign(v) * vec3(equal(t2, vec3(mint2))), mint2);
 }
 
 //球心在原点
@@ -160,7 +187,7 @@ float intraybal(float r, vec3 p, vec3 d)
 	float p2 = dot(p, p);
 	float t = l * l + r2;
 	float q = sqrt(t - p2);
-//可以提前判定无交点的情况，但动态分支反而会造成开销故不使用提前判定
+	//可以提前判定无交点的情况，但动态分支反而会造成开销故不使用提前判定
 	return ((p2 > r2 && l < 0.0) || t < p2) ? -1.0 : sign(r2 - p2) * q + l;
 }
 
@@ -185,11 +212,26 @@ bool nohitraybal(float r, vec3 p, vec3 d)
 	return ((p2 > r2 && l < 0.0) || t < p2);
 }
 
+mat3 getinvTBN(vec2 ddxuv0, vec2 ddyuv0, vec4 ddxpos, vec4 ddypos, vec3 wornor)
+{
+	mat3 invm_a = mat3(
+		ddxuv0.x,	ddyuv0.x,	0.0,
+		ddxuv0.y,	ddyuv0.y,	0.0,
+		0.0,		0.0,		1.0);
+	mat3 m_b = mat3(ddxpos.xyz, ddypos.xyz, wornor);
+	mat3 invTBN = m_b * invm_a;
+	invTBN[0] = normalize(invTBN[0]);
+	invTBN[1] = normalize(invTBN[1]);
+	invTBN[2] = normalize(invTBN[2]);
+	return invTBN;
+}
+
 
 
 
 
 //tonemap
+
 vec3 F(vec3 x)
 {
 	const float A = 0.22;
@@ -203,14 +245,14 @@ vec3 F(vec3 x)
 
 vec3 FilmicToneMapping(vec3 color, float adapted_lum)
 {
-//http://filmicgames.com/archives/75
+//  http://filmicgames.com/archives/75
 	const vec3 WHITE = vec3(11.2);
 	return F(1.6 * adapted_lum * color) / F(WHITE);
 }
 
 vec3 ACESToneMapping(vec3 color, float adapted_lum)
 {
-//https://www.oscars.org/science-technology/sci-tech-projects/aces
+//  https://www.oscars.org/science-technology/sci-tech-projects/aces
 	const float A = 2.51;
 	const float B = 0.03;
 	const float C = 2.43;
@@ -239,13 +281,13 @@ vec3 tonemap(vec3 c, float l)
 
 float ThresholdMap16(vec2 p)
 {
-//https://en.wikipedia.org/wiki/Ordered_dithering
+//  https://en.wikipedia.org/wiki/Ordered_dithering
 	const mat4 TM = mat4(
-			0.0000,0.5000,0.1250,0.5250,
-			0.7500,0.2500,0.8750,0.3750,
-			0.1875,0.6875,0.0625,0.5625,
-			0.9375,0.4375,0.8125,0.3125);
-	p += vec2(2400.0,1080.0);
+		0.0000, 0.5000, 0.1250, 0.5250,
+		0.7500, 0.2500, 0.8750, 0.3750,
+		0.1875, 0.6875, 0.0625, 0.5625,
+		0.9375, 0.4375, 0.8125, 0.3125);
+	p += vec2(2400.0, 1080.0);
 	uvec2 p4 = uvec2(mod(p, 4.0));
 	uvec2 p16 = uvec2(mod(p, 16.0) * (1.0 / 4.0));
 	return TM[p4.y][p4.x] + TM[p16.y][p16.x] * (1.0 / 16.0);
@@ -253,10 +295,10 @@ float ThresholdMap16(vec2 p)
 
 float hash21(vec2 p)
 {
-#if MOBILE	//fp16
+#if MOBILE //fp16
 	const float C = 1024.0 / MATH_PHI;
 	vec4 v = (1.0 / 32.0) * p.xyxy + vec4(0.1, 0.2, 0.3, 0.4);
-#else		//fp32
+#else //fp32
 	const float C = 65536.0 / MATH_PHI;
 	vec4 v = (1.0 / 65536.0) * p.xyxy + vec4(0.1, 0.2, 0.3, 0.4);
 #endif
@@ -271,12 +313,48 @@ float hash21(vec2 p)
 
 vec2 hash22(vec2 p)
 {
-#if MOBILE	//fp16
+#if MOBILE //fp16
 	const float C = 1024.0 / MATH_PHI;
 	vec4 v = (1.0 / 32.0) * p.xyxy + vec4(0.1, 0.2, 0.3, 0.4);
-#else		//fp32
+#else //fp32
 	const float C = 65536.0 / MATH_PHI;
 	vec4 v = (1.0 / 65536.0) * p.xyxy + vec4(0.1, 0.2, 0.3, 0.4);
+#endif
+
+	v = fract(v.yzwx * C + v.xyzw);
+	v = fract(v.yzwx * C + v.xyzw);
+	v = fract(v.yzwx * C + v.xyzw);
+	v = fract(v.yzwx * C + v.xyzw);
+
+	return v.xy;
+}
+
+float hash31(vec3 p)
+{
+#if MOBILE //fp16
+	const float C = 1024.0 / MATH_PHI;
+	vec4 v = (1.0 / 32.0) * p.xyzy + vec4(0.1, 0.2, 0.3, 0.4);
+#else //fp32
+	const float C = 65536.0 / MATH_PHI;
+	vec4 v = (1.0 / 65536.0) * p.xyzx + vec4(0.1, 0.2, 0.3, 0.4);
+#endif
+
+	v = fract(v.yzwx * C + v.xyzw);
+	v = fract(v.yzwx * C + v.xyzw);
+	v = fract(v.yzwx * C + v.xyzw);
+	v = fract(v.yzwx * C + v.xyzw);
+
+	return v.x;
+}
+
+vec2 hash32(vec3 p)
+{
+#if MOBILE //fp16
+	const float C = 1024.0 / MATH_PHI;
+	vec4 v = (1.0 / 32.0) * p.xyzy + vec4(0.1, 0.2, 0.3, 0.4);
+#else //fp32
+	const float C = 65536.0 / MATH_PHI;
+	vec4 v = (1.0 / 65536.0) * p.xyzx + vec4(0.1, 0.2, 0.3, 0.4);
 #endif
 
 	v = fract(v.yzwx * C + v.xyzw);
@@ -291,13 +369,13 @@ float pernoi_2D(vec2 p)
 {
 	vec4 pi = vec4(floor(p), ceil(p));
 	vec2 pf = fract(p);
-	vec4 dp = vec4(0.0,0.0,1.0,1.0) - pf.xyxy;
+	vec4 dp = vec4(0.0, 0.0, 1.0, 1.0) - pf.xyxy;
 
-	vec4 d = vec4 (
-			dot(hash22(pi.zw)*2.0-1.0, dp.zw),
-			dot(hash22(pi.xw)*2.0-1.0, dp.xw),
-			dot(hash22(pi.xy)*2.0-1.0, dp.xy),
-			dot(hash22(pi.zy)*2.0-1.0, dp.zy)	);
+	vec4 d = vec4(
+		dot(hash22(pi.zw) * 2.0 - 1.0, dp.zw),
+		dot(hash22(pi.xw) * 2.0 - 1.0, dp.xw),
+		dot(hash22(pi.xy) * 2.0 - 1.0, dp.xy),
+		dot(hash22(pi.zy) * 2.0 - 1.0, dp.zy));
 
 #if FAST_PERLIN
 	vec2 a = (-2.0 * pf + 3.0) * pf * pf;
@@ -313,13 +391,13 @@ vec2 perpar_2D(vec2 p)
 {
 	vec4 pi = vec4(floor(p), ceil(p));
 	vec2 pf = fract(p);
-	vec4 dp = vec4(0.0,0.0,1.0,1.0) - pf.xyxy;
+	vec4 dp = vec4(0.0, 0.0, 1.0, 1.0) - pf.xyxy;
 
-	vec4 d = vec4 (
-			dot(hash22(pi.zw)*2.0-1.0, dp.zw),
-			dot(hash22(pi.xw)*2.0-1.0, dp.xw),
-			dot(hash22(pi.xy)*2.0-1.0, dp.xy),
-			dot(hash22(pi.zy)*2.0-1.0, dp.zy)	);
+	vec4 d = vec4(
+		dot(hash22(pi.zw) * 2.0 - 1.0, dp.zw),
+		dot(hash22(pi.xw) * 2.0 - 1.0, dp.xw),
+		dot(hash22(pi.xy) * 2.0 - 1.0, dp.xy),
+		dot(hash22(pi.zy) * 2.0 - 1.0, dp.zy));
 
 #if FAST_PERLIN
 	vec2 a = (-2.0 * pf + 3.0) * pf * pf;
@@ -336,14 +414,14 @@ float valnoi_2D(vec2 p)
 {
 	vec4 pi = vec4(floor(p), ceil(p));
 	vec2 pf = fract(p);
-	vec4 dp = vec4(0.0,0.0,1.0,1.0) - pf.xyxy;
+	vec4 dp = vec4(0.0, 0.0, 1.0, 1.0) - pf.xyxy;
 
-	vec4 d = vec4 (
-			hash21(pi.zw),
-			hash21(pi.xw),
-			hash21(pi.xy),
-			hash21(pi.zy)	);
-			
+	vec4 d = vec4(
+		hash21(pi.zw),
+		hash21(pi.xw),
+		hash21(pi.xy),
+		hash21(pi.zy));
+
 #if FAST_VALUE
 	vec2 a = (-2.0 * pf + 3.0) * pf * pf;
 #else
@@ -358,13 +436,13 @@ vec2 valpar_2D(vec2 p)
 {
 	vec4 pi = vec4(floor(p), ceil(p));
 	vec2 pf = fract(p);
-	vec4 dp = vec4(0.0,0.0,1.0,1.0) - pf.xyxy;
+	vec4 dp = vec4(0.0, 0.0, 1.0, 1.0) - pf.xyxy;
 
-	vec4 d = vec4 (
-			hash21(pi.zw),
-			hash21(pi.xw),
-			hash21(pi.xy),
-			hash21(pi.zy)	);
+	vec4 d = vec4(
+		hash21(pi.zw),
+		hash21(pi.xw),
+		hash21(pi.xy),
+		hash21(pi.zy));
 
 #if FAST_VALUE
 	vec2 a = (-2.0 * pf + 3.0) * pf * pf;
@@ -383,17 +461,17 @@ float voro_2D(vec2 p)
 
 #if FAST_VORO
 	vec2 b = round(p);
-	for(float i=-1.0;i<=0.0;i++)
-		for(float j=-1.0;j<=0.0;j++)
+	for (float i = -1.0; i <= 0.0; i++)
+		for (float j = -1.0; j <= 0.0; j++)
 #else
 	vec2 b = floor(p);
-	for(float i=-1.0;i<=1.0;i++)
-		for(float j=-1.0;j<=1.0;j++)
+	for (float i = -1.0; i <= 1.0; i++)
+		for (float j = -1.0; j <= 1.0; j++)
 #endif
 		{
-			vec2 c = b + vec2(i,j);
+			vec2 c = b + vec2(i, j);
 			vec2 h = c + hash22(c);
-			m = min(distance(p,h),m);
+			m = min(distance(p, h), m);
 		}
 
 	return m;
@@ -403,11 +481,11 @@ float voro_2D(vec2 p)
 
 
 
-//	vanilla shader
+//vanilla shader
 
 float fogtime(vec4 fogcol)
 {
-//	三次多项式拟合，四次多项式拟合曲线存在明显突出故不使用
+	//三次多项式拟合，四次多项式拟合曲线存在明显突出故不使用
 	const vec4 k = vec4(349.305545, -159.858192, 30.557216, -1.628452);
 	const float x0 = 1.0;
 	float x1 = fogcol.g;
@@ -418,7 +496,7 @@ float fogtime(vec4 fogcol)
 
 float uv1time(float r1)
 {
-//	四次多项式拟合
+	//四次多项式拟合
 	const vec4 k = vec4(39.581994, -74.236058, 33.842220, 9.368113);
 	float r2 = r1 * r1;
 	float r4 = r2 * r2;
@@ -427,7 +505,7 @@ float uv1time(float r1)
 
 float curtime(vec4 curcol, vec4 fogcol)
 {
-//	原始数据线性变化，无需拟合即可解得精确值
+	//原始数据线性变化，无需拟合即可解得精确值
 	return 1.812780 * (curcol.b / fogcol.a) - 0.918842;
 }
 
@@ -435,9 +513,9 @@ float curtime(vec4 curcol, vec4 fogcol)
 float getleaao(vec3 c)
 {
 	const vec3 O = vec3(0.682352941176471, 0.643137254901961, 0.164705882352941);
-	const vec3 N = vec3(0.195996912842436, 0.978673548072766,-0.061508507207520);
+	const vec3 N = vec3(0.195996912842436, 0.978673548072766, -0.061508507207520);
 
-	return length(c) / dot(O,N) * dot(normalize(c),N);
+	return length(c) / dot(O, N) * dot(normalize(c), N);
 }
 
 float getgraao(vec3 c)
@@ -445,19 +523,19 @@ float getgraao(vec3 c)
 	const vec3 O = vec3(0.745098039215686, 0.713725490196078, 0.329411764705882);
 	const vec3 N = vec3(0.161675377098328, 0.970052262589970, 0.181272392504186);
 
-	return length(c) / dot(O,N) * dot(normalize(c),N);
+	return length(c) / dot(O, N) * dot(normalize(c), N);
 }
 
 vec4 getvarcol(vec4 c)
 {
-	if(equ3(c.rgb))
+	if (equ3(c.rgb))
 	{
 		c.a = c.r;
-		c.rgb = vec3(1.0,1.0,1.0);
+		c.rgb = vec3(1.0, 1.0, 1.0);
 	}
 	else
 	{
-		c.a = c.a<0.001 ? getleaao(c.rgb) : getgraao(c.rgb);
+		c.a = c.a < 0.001 ? getleaao(c.rgb) : getgraao(c.rgb);
 		c.rgb = c.rgb / c.a;
 	}
 	return c;
@@ -465,8 +543,8 @@ vec4 getvarcol(vec4 c)
 
 float getshadow(vec2 uv1, vec4 varcol)
 {
-	float shasky = (uv1.y - 0.875) / SOFTSHADOW;
-//	float shablo = (varcol.a - 0.6) / SOFTSHADOW;
+	float shasky = (uv1.y - 0.875) / SUN_R;
+	//float shablo = (varcol.a - 0.6) / SUN_R;
 	float shadow = saturate(shasky + 1.0) * 2.0 - 1.0;
 	return (sqrt(1.0 - shadow * shadow) * shadow + asin(shadow)) * (1.0 / MATH_PI) + 0.5;
 }
@@ -480,7 +558,7 @@ float uv1x2lig(float uv1x)
 float uv1y2lig(float uv1y)
 {
 	float l = ((15.0 / 16.0) - uv1y) * 16.0 + (1.0 / 16.0);
-	return atan(3.0 / l) * (2.0 / MATH_PI);
+	return (2.0 / MATH_PI) * atan(3.0 / l);
 }
 
 
@@ -491,16 +569,59 @@ float uv1y2lig(float uv1y)
 
 vec2 airden(vec3 pos, const float r, const float hr, const float hm)
 {
-//	float h = max(length(pos) - r, 0.0);
+	//float h = max(length(pos) - r, 0.0);
 	float h = length(pos) - r;
-	return exp(h * (1.0 / vec2(-hr,-hm)));
+	return exp(h * (1.0 / vec2(-hr, -hm)));
 }
 
-void setprpm(out float pr, out float pm, float c, float g)
+float getpr(float c)
 {
-//Oskar Elek “Rendering Parametrizable Planetary Atmospheres with Multiple Scattering in Real-Time”
-	pr = (1.0 / (4.0 * MATH_PI)) * (8.0 / 10.0) * (7.0 / 5.0 + 1.0 / 2.0 * c);
-	pm = (1.0 / (4.0 * MATH_PI)) * (3.0 * (1.0 - g * g) * (1.0 + c * c)) / (2.0 * (2.0 + g * g) * pow3_2(1.0 + g * g - 2.0 * g * c));
+//  [Oskar Elek. "Rendering Parametrizable Planetary Atmospheres with Multiple Scattering in Real-Time"]
+	return (1.0 / (4.0 * MATH_PI)) * (8.0 / 10.0) * (7.0 / 5.0 + 1.0 / 2.0 * c);
+}
+
+float getpm(float c, float g)
+{
+	return (3.0 / (8.0 * MATH_PI)) * ((1.0 - g * g) * (1.0 + c * c)) / ((2.0 + g * g) * pow3_2(1.0 + g * g - 2.0 * g * c));
+}
+
+float getairpr(vec3 sunvec, vec3 marvec)
+{
+	float c = dot(sunvec, marvec);
+	return getpr(c);
+}
+
+float getairpm(vec3 sunvec, vec3 marvec)
+{
+	float c = dot(sunvec, marvec);
+
+	float pm0 = getpm(c, 0.76);
+	float pm1 = getpm(c, 0.87);
+	float pm2 = getpm(c, 0.98);
+
+	return dot(vec3(pm0,pm1,pm2),vec3(0.8,0.1,0.1));
+}
+float getfogpr(vec3 sunvec, vec3 marvec)
+{
+	float c = dot(sunvec, marvec);
+	return getpr(c);
+}
+
+float getfogpm(vec3 sunvec, vec3 marvec)
+{
+	float c = dot(sunvec, marvec);
+	return getpm(c, 0.76);
+}
+
+float getclopm(vec3 sunvec, vec3 marvec)
+{
+	float c = dot(sunvec, marvec);
+
+	float pm0 = getpm(c, -0.25);
+	float pm1 = getpm(c, 0.10);
+	float pm2 = getpm(c, 0.95);
+
+	return dot(vec3(pm0,pm1,pm2),vec3(0.1,0.8,0.1));
 }
 
 vec2 atmads(vec3 sampos, vec3 sunvec, vec2 adm)
@@ -509,38 +630,32 @@ vec2 atmads(vec3 sampos, vec3 sunvec, vec2 adm)
 	vec2 ads0;
 	vec2 ads1 = adm;
 
-	vec3 maxpos = sampos + max(dot(-sampos,sunvec), 0.0) * sunvec;
-	vec2 mp = airden(maxpos,EARTH_R,HR,HM);
-	
+	vec3 maxpos = sampos + max(dot(-sampos, sunvec), 0.0) * sunvec;
+	vec2 mp = airden(maxpos, EARTH_R, HR, HM);
+
 	float em = mp.x - adm.x;
-	//不能用1.0，否则会出现ln0
-	float dp = (-2.0 * mp.x + adm.x) * (0.99999 / SAMNUM);
-	
-	for(float j=1.0; j<=SAMNUM; j++)
+	float dp = (-2.0 * mp.x + adm.x) * (0.99999 / SAMNUM); //1.0 -> 0.99999
+
+	for (float j = 1.0; j <= SAMNUM; j++)
 	{
 		float p = -abs(em + dp * j) + mp.x;
 		float r = log(p) * -HR + EARTH_R;
-		float l = max(lenraybal(r, sampos, sunvec),0.0);
+		float l = max(lenraybal(r, sampos, sunvec), 0.0);
 		sampos += l * sunvec;
 
 		ads0 = ads1;
-		ads1 = airden(sampos,EARTH_R,HR,HM);
+		ads1 = airden(sampos, EARTH_R, HR, HM);
 		adssum += (ads0 + ads1) * l;
 	}
 
-	//梯形积分延迟常量计算
+	//延迟常量计算
 	return adssum * 0.5;
-
 }
 
 vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunvec, vec4 scrpos)
 {
-#if AUTO_MARCH_NUM
 	float marnum = inversesqrt(abs(stavec.y) + 0.0001) * MARNUM;
 	marnum = fract(marnum) > ThresholdMap16(scrpos.xy) ? ceil(marnum) : floor(marnum);
-#else
-	const float marnum = MARNUM;
-#endif
 
 	vec2 admsum = vec2(0.0);
 	vec2 adm0;
@@ -556,12 +671,13 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 
 	if (nohitraybal(EARTH_R * 0.9996, marpos, sunvec))
 	{
-		//第零个采样点的步进距离为0，只需计算阳光方向的光程
+		//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
 		vec2 adorigin = atmads(marpos, sunvec, adm1);
-		vec3 odorigin = (LR + O3) * adorigin.x + LM * adorigin.y;
+		vec3 odorigin = RO * adorigin.x + LM * adorigin.y;
+		vec3 expodorigin = exp(-odorigin);
 
-		expodr1 = exp(-odorigin) * adm1.x;
-		expodm1 = exp(-odorigin) * adm1.y;
+		expodr1 = expodorigin * adm1.x;
+		expodm1 = expodorigin * adm1.y;
 	}
 
 	float maxl = intraybal(EARTH_R * 0.9995, marpos, stavec);
@@ -571,8 +687,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 	vec2 mp = airden(maxpos, EARTH_R, HR, HM);
 
 	float em = mp.x - adm1.x;
-	//不能用1.0，否则会出现ln0
-	float dp = (hitflag ? (-em) : (-2.0 * mp.x + adm1.x)) * (0.99999 / marnum);
+	float dp = (hitflag ? (-em) : (-2.0 * mp.x + adm1.x)) * (0.99999 / marnum); //1.0 -> 0.99999
 
 	for (float j = 1.0; j <= marnum; j++)
 	{
@@ -584,7 +699,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 
 		adm0 = adm1;
 		adm1 = airden(marpos, EARTH_R, HR, HM);
-		admsum += (adm0 + adm1) * l;
+		admsum += (adm0 + adm1) * 0.5 * l; //不能延迟常量计算
 
 		//如果直接用r会有奇怪的条纹
 		if (nohitraybal(EARTH_R * 0.9994, marpos, sunvec))
@@ -592,135 +707,235 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 			vec2 adssum = atmads(marpos, sunvec, adm1);
 
 			vec2 ad = adssum + admsum;
-			vec3 od = (LR + O3) * ad.x + LM * ad.y;
+			vec3 od = RO * ad.x + LM * ad.y;
+			vec3 expod = exp(-od);
 
 			expodr0 = expodr1;
-			expodr1 = exp(-od) * adm1.x;
+			expodr1 = expod * adm1.x;
 			marsumr += (expodr0 + expodr1) * l;
 
 			expodm0 = expodm1;
-			expodm1 = exp(-od) * adm1.y;
+			expodm1 = expod * adm1.y;
 			marsumm += (expodm0 + expodm1) * l;
 		}
 	}
-
-	//梯形积分延迟常量计算
-	admsum *= 0.5;
+	//延迟常量计算
 	marsumr *= 0.5;
 	marsumm *= 0.5;
 
-	float pr, pm;
-	setprpm(pr, pm, dot(sunvec, stavec), G);
+	float pr = getairpr(sunvec, stavec);
+	float pm = getairpm(sunvec, stavec);
 
 	vec3 insca = orisunlig * (pr * LR * marsumr + pm * LM * marsumm);
-	vec3 outsca = hitflag ? vec3(0.0) : skylig * exp((-(LR + O3)) * admsum.x + (-LM) * admsum.y);
+	vec3 outsca = hitflag ? vec3(0.0) : skylig * exp((-RO) * admsum.x + (-LM) * admsum.y);
 
 	return outsca + insca;
 }
 
-void setfog(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunlig, vec3 sunvec, vec2 uv1)
+void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunvec, const float marnum)
 {
-	const float marnum = MARNUM;
-
 	vec3 delpos = stapos - marpos;
 	vec3 stavec = normalize(delpos);
 
 	vec2 admsum = vec2(0.0);
 	vec2 adm0;
-	vec2 adm1 = airden(marpos,EARTH_R,HR,HM);
+	vec2 adm1 = airden(marpos, EARTH_R, HR, HM);
 
 	vec3 marsumr = vec3(0.0);
 	vec3 expodr0;
 	vec3 expodr1 = vec3(0.0);
-	
+
 	vec3 marsumm = vec3(0.0);
 	vec3 expodm0;
 	vec3 expodm1 = vec3(0.0);
 
-	if(nohitraybal(EARTH_R * 0.9996,marpos,sunvec))
+	if (nohitraybal(EARTH_R * 0.9996, marpos, sunvec))
 	{
-		//第零个采样点的步进距离为0，只需计算阳光方向的光程
+		//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
 		vec2 adorigin = atmads(marpos, sunvec, adm1);
-		vec3 odorigin = (LR + O3) * adorigin.x + LM * adorigin.y;
-		
-		expodr1 = exp(-odorigin) * adm1.x;
-		expodm1 = exp(-odorigin) * adm1.y;
+		vec3 odorigin = RO * adorigin.x + LM * adorigin.y;
+		vec3 expodorigin = exp(-odorigin);
+
+		expodr1 = expodorigin * adm1.x;
+		expodm1 = expodorigin * adm1.y;
 	}
 
 	float l = length(delpos) * (1.0 / marnum);
 
-	for(float j=1.0; j<=marnum; j++)
+	for (float j = 1.0; j <= marnum; j++)
 	{
 		marpos += l * stavec;
-		
+
 		adm0 = adm1;
-		adm1 = airden(marpos,EARTH_R,HR,HM);
-		admsum += (adm0 + adm1) * l;
-		
+		adm1 = airden(marpos, EARTH_R, HR, HM);
+		admsum += (adm0 + adm1) * 0.5 * l; //不能延迟常量计算
+
 		//如果直接用r会有奇怪的条纹
-		if(nohitraybal(EARTH_R * 0.9994,marpos,sunvec))
+		if (nohitraybal(EARTH_R * 0.9994, marpos, sunvec))
 		{
 			vec2 adssum = atmads(marpos, sunvec, adm1);
-			
+
 			vec2 ad = adssum + admsum;
-			vec3 od = (LR + O3) * ad.x + LM * ad.y;
-			
+			vec3 od = RO * ad.x + LM * ad.y;
+			vec3 expod = exp(-od);
+
 			expodr0 = expodr1;
-			expodr1 = exp(-od) * adm1.x;
+			expodr1 = expod * adm1.x;
 			marsumr += (expodr0 + expodr1) * l;
-			
+
 			expodm0 = expodm1;
-			expodm1 = exp(-od) * adm1.y;
+			expodm1 = expod * adm1.y;
 			marsumm += (expodm0 + expodm1) * l;
 		}
 	}
-	
-	//梯形积分延迟常量计算
-	admsum  *= 0.5;
+
+	//延迟常量计算
 	marsumr *= 0.5;
 	marsumm *= 0.5;
-	
-	float pr, pm;
-	setprpm(pr, pm, dot(sunvec, stavec), G);
-	
-	insca = uv1.y * (pr * LR * marsumr + pm * LM * marsumm);
-	outsca = exp((-(LR + O3)) * admsum.x + (-LM) * admsum.y);
+
+	float pr = getfogpr(sunvec, stavec);
+	float pm = getfogpm(sunvec, stavec);
+
+	insca = (pr * LR * marsumr + pm * LM * marsumm);
+	outsca = exp((-(LR/*+ O3*/)) * admsum.x + (-LM) * admsum.y); //雾在近地表不考虑臭氧吸收
 }
 
 vec3 getsunlig(vec3 marpos, vec3 orisunlig, vec3 sunvec)
 {
-	if(nohitraybal(EARTH_R * 0.9999,marpos,sunvec))
+	if (nohitraybal(EARTH_R * 0.9999, marpos, sunvec))
 	{
-		vec2 adm = airden(marpos,EARTH_R,HR,HM);
+		vec2 adm = airden(marpos, EARTH_R, HR, HM);
 		vec2 adorigin = atmads(marpos, sunvec, adm);
-		return orisunlig * exp((-(LR + O3)) * adorigin.x + (-LM) * adorigin.y);
+		return orisunlig * exp((-RO) * adorigin.x + (-LM) * adorigin.y);
 	}
 	else
 		return vec3(0.0);
 }
 
-vec3 physicsun(vec3 orisunlig, vec3 sunvec, vec3 skyvec, const float r)
+vec3 physicsun(vec3 skylig, vec3 orisunlig, vec3 sunvec, vec3 skyvec, const float r)
 {
-	//http://www.physics.hmc.edu/faculty/esin/a101/limbdarkening.pdf
-	const vec3 u = vec3(1.0 ,1.0 ,1.0);
-	const vec3 a = vec3(0.397 ,0.503 ,0.652);
-	/*const*/ float s = 2.0 * MATH_PI * (1.0 - cos(r));
+//  http://www.physics.hmc.edu/faculty/esin/a101/limbdarkening.pdf
+	const vec3 u = vec3(1.0, 1.0, 1.0);
+	const vec3 a = vec3(0.397, 0.503, 0.652);
+	/*const*/ float s = 2.0 * MATH_PI * (1.0 - cos(r)); //const会无法通过编译
 
-	float theta = acos(dot(skyvec,sunvec));
+	float theta = acos(dot(skyvec, sunvec));
 
-	if(theta < r)
+	if (theta < r)
 	{
 	//	vec3 lig = orisunlig / s;
-		vec3 lig = orisunlig;
+		vec3 lig = orisunlig * 5.0; //物理不正确，但是好看
 		float mu = sqrt(1.0 - pow2(theta / r));
-		vec3 factor = 1.0 + u * (pow(vec3(mu) , a) - 1.0);
+		vec3 factor = u * pow(vec3(mu), a) + (1.0 - u);
 
-		return lig * factor;
+		return skylig + lig * factor;
 	}
 	else
 	{
-		return vec3(0.0);
+		return skylig;
 	}
+}
+
+bool iscloud(vec3 p0)
+{
+	const float C = 0.65;
+	vec3 p1 = floor(p0 * (1.0 / 3.0));
+	return (hash21(p1.xz) > C) && (hash21(p0.xz) > C);
+}
+
+float closamsun(vec3 sampos, vec3 aabbsam, vec3 sunvec, const float closamnum, const vec3 CLOSIZ)
+{
+	float samsum = 0.0;
+	for(float k = 0.0; k < closamnum && sampos.y > CLOUD_Y && sampos.y < (CLOUD_Y + CLOUD_H); k++)
+	{
+		vec4 intsun = maraabb(sampos, sunvec, aabbsam, aabbsam + CLOSIZ);
+		if(iscloud(aabbsam))
+			samsum += intsun.w;
+		sampos += 1.0 * intsun.w * sunvec;
+		aabbsam += intsun.xyz * CLOSIZ;
+	}
+	return samsum;
+}
+
+vec3 cloudrender_fast(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec, vec3 skylum, float gametime)
+{
+	const vec3 CLOSIZ = vec3(CLOUD_W, CLOUD_H, CLOUD_W);
+
+	vec3 marpos = campos;
+	marpos.xz += mod(gametime, 86400.0) * CLOUD_SPEED;
+	vec3 aabbmar = floor(marpos / CLOSIZ) * CLOSIZ;
+
+	float marsum = 0.0;
+
+	for(float i = 0.0; i < 8.0 && marpos.y > CLOUD_Y && marpos.y < (CLOUD_Y + CLOUD_H); i++)
+	{
+		vec4 intclo = maraabb(marpos, marvec, aabbmar, aabbmar + CLOSIZ);
+		if(iscloud(aabbmar))
+			marsum += intclo.w;
+		marpos += intclo.w * marvec;
+		aabbmar += intclo.xyz * CLOSIZ;
+	}
+
+	return skylig + (1.0 / (4.0 * MATH_PI)) * marsum * sunlig;
+}
+
+vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec, vec3 skylum, float gametime)
+{
+	const vec3 CLOSIZ = vec3(CLOUD_W, CLOUD_H, CLOUD_W);
+
+	vec3 marpos = campos;
+	marpos.xz += mod(gametime, 86400.0) * CLOUD_SPEED;
+	vec3 aabbmar = floor(marpos / CLOSIZ) * CLOSIZ;
+
+	float marsum = 0.0;
+	float expsum = 0.0;
+
+	for(float i = 0.0; i < CLOINTNUM && marpos.y > CLOUD_Y && marpos.y < (CLOUD_Y + CLOUD_H); i++)
+	{
+		vec4 intclo = maraabb(marpos, marvec, aabbmar, aabbmar + CLOSIZ);
+
+		if(iscloud(aabbmar))
+		{
+			float l = intclo.w * (1.0 / CLOMARNUM);
+			vec3 marstep = l * marvec;
+
+			vec3 t_marpos = marpos;
+
+			float samsun0;
+			float samsun1 = closamsun(t_marpos, aabbmar, sunvec, CLOSAMNUM, CLOSIZ);
+
+			float s = 0.0;
+			
+			for(float j = 0.0; j < CLOMARNUM; j++)
+			{
+				t_marpos += marstep;
+
+				samsun0 = samsun1;
+				samsun1 = closamsun(t_marpos, aabbmar, sunvec, CLOSAMNUM, CLOSIZ);
+			
+			//  [linlin. 均匀介质散射中能量守恒的梯形积分]
+			//  ((-E^(L*(Sa + d)) + E^(L*(l + Sb + d)))*l)/(E^(L*(l + Sa + Sb + 2*d))*(L*(l - Sa + Sb)))
+				float t_a = samsun1 + l;
+				float t_0 = exp(CLOUD_LM * (marsum + samsun0));
+				float t_1 = exp(CLOUD_LM * (marsum + t_a));
+				s += (t_1 - t_0) / (t_0 * t_1 * (t_a - samsun0));
+
+				marsum += l;
+			}
+			//延迟常量计算
+			expsum += s * l / CLOUD_LM;
+		}
+
+		marpos += intclo.w * marvec;
+		aabbmar += intclo.xyz * CLOSIZ;
+	}
+
+	float pm = getclopm(sunvec, marvec);
+
+	vec3 insca = sunlig * (pm * CLOUD_LM * expsum);
+	vec3 outsca = skylig * exp(-CLOUD_LM * marsum);
+
+	return insca + outsca + skylum;
 }
 
 
@@ -728,6 +943,16 @@ vec3 physicsun(vec3 orisunlig, vec3 sunvec, vec3 skyvec, const float r)
 
 
 //brdf bsdf
+
+float gamma2line(float x)
+{
+	return pow(x, GAMMA);
+}
+
+float line2gamma(float x)
+{
+	return pow(x, 1.0 / GAMMA);
+}
 
 vec3 gamma2line(vec3 x)
 {
@@ -744,25 +969,117 @@ vec3 lig2col(vec3 lig)
 	return line2gamma(tonemap(lig, LUM));
 }
 
-vec3 Diffuse_Lambert(vec3 col)
+float col2lum(vec3 lig)
 {
-	return (1.0 / MATH_PI) * col; 
+	return dot(lig, vec3(0.299, 0.587, 0.114));
+}
+
+vec3 Diffuse_Lambert(vec3 BaseColor)
+{
+	return (1.0 / MATH_PI) * BaseColor;
+}
+
+vec3 Diffuse_Gotanda(vec3 BaseColor, float Roughness, float NoV, float NoL, float VoH, float VoL)
+{
+//  [Gotanda 2014, "Designing Reflectance Models for New Consoles"]
+	float Cosri = VoL - NoV * NoL;
+
+	float r2 = Roughness * Roughness;
+	float r4 = r2 * r2;
+	float r4_13 = r4 + 1.36053;
+
+	float Fr = (1.0 - (0.542026 * r4 + 0.303573 * r2) / r4_13) * (1.0 - pow(1.0 - NoV, 5.0 - 4.0 * r4) / r4_13) * ((-0.733996 * r4 * r2 + 1.50912 * r4 - 1.16402 * r2) * pow(1.0 - NoV, 1.0 + 1.0 / (39.0 * r4 * r4 + 1.0)) + 1.0);
+	float Lm = (max(1.0 - 2.0 * r2, 0.0) * (1.0 - pow5(1.0 - NoL)) + min(2.0 * r2, 1.0)) * (1.0 - 0.5 * r2 * (NoL - 1.0)) * NoL;
+	float Vd = (r4 / ((r4 + 0.09) * (1.31072 + 0.995584 * NoV))) * (1.0 - pow(1.0 - NoL, (1.0 - 0.3726732 * NoV * NoV) / (0.188566 + 0.38841 * NoV)));
+	float Bp = Cosri < 0.0 ? 1.4 * NoV * NoL * Cosri : Cosri;
+	float Lr = (21.0 / 20.0) * (1.0 - F0) * (Fr * Lm + Vd + Bp);
+
+	return BaseColor * (1.0 / MATH_PI) * Lr;
+}
+
+float D_GGX(float Roughness, float NoH)
+{
+//  [Walter et al. 2007, "Microfacet models for refraction through rough surfaces"]
+	float a = Roughness * Roughness;
+	float a2 = a * a;
+	float d = (NoH * a2 - NoH) * NoH + 1.0;
+	return a2 / (MATH_PI * d * d);
+}
+
+float Vis_Smith(float Roughness, float NoV, float NoL)
+{
+	float a = pow2(Roughness);
+	float a2 = a * a;
+
+	float Vis_SmithV = NoV + sqrt(NoV * (NoV - NoV * a2) + a2);
+	float Vis_SmithL = NoL + sqrt(NoL * (NoL - NoL * a2) + a2);
+	return 1.0 / (Vis_SmithV * Vis_SmithL);
+}
+
+vec3 F_Fresnel(vec3 SpecularColor, float VoH)
+{
+	vec3 SpecularColorSqrt = sqrt(clamp(SpecularColor, vec3(0.0), vec3(0.99)));
+	vec3 n = (1.0 + SpecularColorSqrt) / (1.0 - SpecularColorSqrt);
+	vec3 g = sqrt(n * n + VoH * VoH - 1.0);
+	return 0.5 * pow2((g - VoH) / (g + VoH)) * (1.0 + pow2(((g + VoH) * VoH - 1.0) / ((g - VoH) * VoH + 1.0)));
+}
+
+vec3 F_Schlick(vec3 SpecularColor, float VoH)
+{
+//  [Schlick 1994, "An Inexpensive BRDF Model for Physically-Based Rendering"]
+	float Fc = pow5(1.0 - VoH);
+	return saturate(50.0 * SpecularColor.g) * Fc + (1.0 - Fc) * SpecularColor;
+}
+
+vec3 Diffuse_BRDF(vec3 BaseColor, float Roughness, float NoV, float NoL, float VoH, float VoL)
+{
+#if FAST_BRDF
+	return Diffuse_Lambert(BaseColor);
+#else
+	return Diffuse_Gotanda(BaseColor, Roughness, NoV, NoL, VoH, VoL);
+#endif
+}
+
+vec3 Specular_BRDF(vec3 SpecularColor, float Roughness, float NoV, float NoL, float NoH, float VoH)
+{
+#if FAST_BRDF
+	return (D_GGX(Roughness, NoH) * Vis_Smith(Roughness, NoV, NoL) * F_Schlick(SpecularColor, VoH));
+#else
+	return (D_GGX(Roughness, NoH) * Vis_Smith(Roughness, NoV, NoL) * F_Fresnel(SpecularColor, VoH));
+#endif
+}
+
+vec3 Microfacet_BRDF(vec3 BaseColor, vec3 SpecularColor, float Roughness, vec3 N, vec3 V, vec3 L)
+{
+	vec3 H = normalize(V + L);
+
+	float NoV = dot(N, V);
+	float NoL = dot(N, L);
+	float NoH = dot(N, H);
+	float VoH = dot(V, H);
+	float VoL = dot(V, L);
+
+	vec3 diffuse = Diffuse_Gotanda(BaseColor, Roughness, NoV, NoL, VoH, VoL);
+	vec3 specular = Specular_BRDF(SpecularColor, Roughness, NoV, NoL, NoH, VoH);
+
+	return diffuse + specular;
 }
 
 
 
-
-
 //origin shader light system
-
-vec3 skyrender(vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunvec, vec4 scrpos)
+void setsunlig(bool issun, vec4 world1, vec3 campos, out vec3 orisunlig, out vec3 sunlig, out vec3 sunvec)
 {
-	vec3 skylig = vec3(0.0);
-
-	skylig += physicsun(orisunlig, sunvec, skyvec, SUN_R);
-	skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec, scrpos);
-
-	return min(skylig,1000.0);
+	const mat3 M = mat3(
+		cos(SUNDEC), 0.0, sin(SUNDEC),
+		0.0, 1.0, 0.0,
+		-sin(SUNDEC), 0.0, cos(SUNDEC));
+	if (issun)
+		orisunlig = gamma2line(SUNCOL) * SUNLIGHT_A;
+	else
+		orisunlig = gamma2line(MOOCOL) * MOOLIGHT_A;
+	sunvec = M * normalize(world1.xyz);
+	sunlig = getsunlig(campos, orisunlig, sunvec);
 }
 
 void setsunlig(float t, vec3 campos, out vec3 orisunlig, out vec3 sunlig, out vec3 sunvec)
@@ -770,15 +1087,15 @@ void setsunlig(float t, vec3 campos, out vec3 orisunlig, out vec3 sunlig, out ve
 	const mat3 M = mat3(
 		cos(SUNDEC), 0.0, sin(SUNDEC),
 		0.0, 1.0, 0.0,
-		-sin(SUNDEC), 0.0, cos(SUNDEC) );
-	if(t > -0.02)
+		-sin(SUNDEC), 0.0, cos(SUNDEC));
+	if (t > -0.02)
 	{
-		sunvec = vec3(cos(t),sin(t),0.0);
+		sunvec = vec3(cos(t), sin(t), 0.0);
 		orisunlig = gamma2line(SUNCOL) * SUNLIGHT_A;
 	}
 	else
 	{
-		sunvec = -vec3(cos(t),sin(t),0.0);
+		sunvec = -vec3(cos(t), sin(t), 0.0);
 		orisunlig = gamma2line(MOOCOL) * MOOLIGHT_A;
 	}
 	sunvec = M * sunvec;
@@ -787,9 +1104,9 @@ void setsunlig(float t, vec3 campos, out vec3 orisunlig, out vec3 sunlig, out ve
 
 vec3 getenvlig(vec2 uv1, vec3 sunlig, vec3 orisunlig, vec3 marpos, vec3 sunvec, float ao)
 {
-	vec3 skylum = (2.0 * MATH_PI) * physicsky(vec3(0.0), marpos, normalize(vec3(0.0,2.0,1.0)), orisunlig, sunvec, vec4(0.0));
-	vec3 blolum = (sunlig + skylum) * GRAY * exp(-3.0 * (0.9375 - uv1.y));
-	return mix(blolum, skylum, uv1y2lig(uv1.y) * 0.5) * ao;
+	vec3 skylum = physicsky(vec3(0.0), marpos, vec3(0.0, 0.8, 0.6), orisunlig, sunvec, vec4(0.0));
+	vec3 blolum = sunlig * Diffuse_Lambert(GRAY) * uv1y2lig(uv1.y);
+	return mix(blolum, skylum, uv1y2lig(uv1.y) * 0.6) * ao;
 }
 
 vec3 getpoilig(vec2 uv1)
@@ -798,3 +1115,88 @@ vec3 getpoilig(vec2 uv1)
 	return POILIG * uv1x2lig(uv1.x);
 }
 
+vec3 getearpos(vec3 campos, vec4 worpos)
+{
+	return campos + worpos.xyz * (1.0 / 16.0);
+}
+
+void setfog(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 orisunlig, vec3 sunvec, vec2 uv1)
+{
+	atmsca(outsca, insca, stapos, marpos, sunvec, 8.0);
+	insca *= uv1.y;
+}
+
+vec3 skyfog(vec3 skylig, vec3 stapos, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunvec, vec4 scrpos)
+{
+	float skylineh = sqrt(1.0 - pow2(EARTH_R / marpos.y));
+	float marnum = inversesqrt(abs(stavec.y + skylineh) + 0.01) * MARNUM;
+	marnum = fract(marnum) > ThresholdMap16(scrpos.xy) ? ceil(marnum) : floor(marnum);
+	marnum = min(marnum, 256.0);
+
+	vec3 insca;
+	vec3 outsca;
+	atmsca(outsca, insca, stapos, marpos, sunvec, marnum);
+	return skylig * outsca + orisunlig * insca;
+}
+
+vec3 skyrender(vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunlig, vec3 skylum, vec3 sunvec, vec4 scrpos, float gametime)
+{
+	bool needrendercloud = true;
+	float clolen = 0.0;
+	vec3 reaclopos = campos;
+	vec3 fakclopos = campos;
+
+	if(campos.y < EARTH_R + CLOUD_Y)
+	{
+		clolen = intraybal(EARTH_R + CLOUD_Y, campos, skyvec);
+		if((clolen < -0.5) || (!nohitraybal(EARTH_R, campos, skyvec)))
+		{
+			needrendercloud = false;
+		}
+		else
+		{
+			reaclopos = campos + skyvec * clolen;
+			fakclopos = reaclopos;
+			fakclopos.y = CLOUD_Y + 0.00001;
+		}
+
+		needrendercloud = needrendercloud && nohitraybal(EARTH_R, campos, skyvec);
+	}
+	else if(campos.y > EARTH_R + CLOUD_Y + CLOUD_H)
+	{
+		float clolen = intraybal(EARTH_R + CLOUD_Y + CLOUD_H, campos, skyvec);
+		if(clolen < -0.5)
+		{
+			needrendercloud = false;
+		}
+		else
+		{
+			reaclopos = campos + skyvec * clolen;
+			fakclopos = reaclopos;
+			fakclopos.y = CLOUD_Y + CLOUD_H - 0.00001;
+		}
+	}
+
+	vec3 skylig = vec3(0.0);
+
+#if FAST_CLOUD
+	skylig = physicsun(skylig, orisunlig, sunvec, skyvec, SUN_R);
+	skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec, scrpos);
+	skylig = cloudrender_fast(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
+#else
+	if(needrendercloud)
+	{
+		skylig = physicsun(skylig, orisunlig, sunvec, skyvec, SUN_R);
+		skylig = physicsky(skylig, reaclopos, skyvec, orisunlig, sunvec, scrpos);
+		skylig = cloudrender(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
+		skylig = skyfog(skylig, reaclopos, campos, skyvec, orisunlig, sunvec, scrpos);
+	}
+	else
+	{
+		skylig = physicsun(skylig, orisunlig, sunvec, skyvec, SUN_R);
+		skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec, scrpos);
+	}
+#endif
+
+	return skylig;
+}

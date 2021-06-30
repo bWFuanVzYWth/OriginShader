@@ -8,16 +8,32 @@ precision highp float;
 
 attribute POS4 POSITION;
 
-flat varying float t;
+#include "shaderfunction.lin"
+
+flat varying vec3 campos;
+flat varying vec3 clocampos;
+
+#if TIMESYSTEM == 1
+flat varying vec3 sunvec;
+flat varying vec3 orisunlig;
+flat varying vec3 closunlig;
+flat varying vec3 closkylum;
+#endif
 
 varying vec4 skypos;
 
-#include "shaderfunction.lin"
-
 void main()
 {
-	t = fogtime(FOG_COLOR);
+	campos = vec3(0.0, EARTH_R + ELEVATION, 0.0);
+	clocampos = vec3(0.0, EARTH_R + ELEVATION + CLOUD_Y, 0.0);
+
+#if TIMESYSTEM == 1
+	float t = fogtime(FOG_COLOR);
+	setsunlig(t, clocampos, orisunlig, closunlig, sunvec);
+	closkylum = physicsky(vec3(0.0), clocampos, vec3(0.0, 0.8, 0.6), orisunlig, sunvec, vec4(0.0));
+#endif
 
 	gl_Position = WORLD[1].y < 0.0 ? vec4(2.0) : vec4(POSITION.xz * 2.0, 0.999999, 1.0);
-	skypos = WORLD * (inverse_mat4(WORLDVIEWPROJ) * gl_Position);
+	vec4 projpos = vec4(POSITION.xz * 2.0, 0.5, 1.0);
+	skypos = WORLD * (inverse_mat4(WORLDVIEWPROJ) * projpos);
 }
