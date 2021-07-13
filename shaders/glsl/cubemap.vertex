@@ -1,0 +1,45 @@
+#version 300 es
+#pragma optimize(on)
+precision highp float;
+
+#include "vertexVersionCentroidUV.h"
+#include "uniformInterFrameConstants.h"
+#include "uniformPerFrameConstants.h"
+#include "uniformWorldConstants.h"
+
+attribute POS4 POSITION;
+attribute vec2 TEXCOORD_0;
+
+#include "shaderfunction.lin"
+
+flat varying vec3 campos;
+flat varying vec3 clocampos;
+
+flat varying vec3 sunvec;
+flat varying vec3 orisunlig;
+flat varying vec3 closunlig;
+flat varying vec3 closkylum;
+
+varying vec4 skypos;
+
+LAYOUT_BINDING(0) uniform sampler2D TEXTURE_0;
+
+void main()
+{
+#if TIMESYSTEM == 1
+	campos = vec3(0.0, EARTH_R + ELEVATION, 0.0);
+	clocampos = vec3(0.0, EARTH_R + ELEVATION + CLOUD_Y, 0.0);
+
+	float t = fogtime(FOG_COLOR);
+	setsunlig(t, clocampos, orisunlig, closunlig, sunvec);
+	closkylum = physicsky(vec3(0.0), clocampos, vec3(0.0, 0.8, 0.6), orisunlig, sunvec, 0.0);
+
+    skypos = WORLD * POSITION;
+    gl_Position = WORLDVIEWPROJ * POSITION;
+
+    uv = TEXCOORD_0;
+
+#else
+	gl_Position = vec4(2.0);
+#endif
+}

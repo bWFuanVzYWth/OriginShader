@@ -9,16 +9,15 @@ precision highp float;
 flat varying vec3 campos;
 flat varying vec3 clocampos;
 
-#if TIMESYSTEM == 1
 flat varying vec3 sunvec;
 flat varying vec3 orisunlig;
 flat varying vec3 closunlig;
 flat varying vec3 closkylum;
-#endif
 
 varying vec4 skypos;
 
 #include "uniformWorldConstants.h"
+#include "uniformInterFrameConstants.h"
 #include "uniformPerFrameConstants.h"
 #include "uniformShaderConstants.h"
 #include "util.h"
@@ -30,31 +29,12 @@ void main()
 	vec4 outcol = vec4(1.0);
 
 	vec3 skyvec = normalize(skypos.xyz);
-	
-#if TIMESYSTEM == 2
-	bool issun = texture2D(TEXTURE_0, vec2(0.5)).r > 0.999;
 
-	vec3 sunvec;
-	vec3 orisunlig;
-	vec3 closunlig;
-	setsunlig(issun, WORLD[1], clocampos, orisunlig, closunlig, sunvec);
-
-	vec3 closkylum = physicsky(vec3(0.0), clocampos, vec3(0.0, 0.8, 0.6), orisunlig, sunvec, vec4(0.0));
-
-#endif
-
-
-
-//为什么这里带来的优化这么小
-#if 0
 	vec3 skylig = vec3(0.0);
-	vec2 pixpos = mod(gl_FragCoord.xy + vec2(-0.5, -0.5), 2.0);
-	if(pixpos.x + pixpos.y < 0.1)
-		skylig = skyrender(campos, skyvec, orisunlig, sunvec, gl_FragCoord * 0.5, TIME);
-	skylig = 0.5 * fwidth(skylig);
-#else
-	vec3 skylig = skyrender(campos, skyvec, orisunlig, closunlig, closkylum, sunvec, gl_FragCoord, TIME);
-#endif
+
+	vec4 thr = vec4(ThresholdMap16(gl_FragCoord.xy));
+	
+	skylig = skyrender(skylig, campos, skyvec, orisunlig, closunlig, closkylum, sunvec, thr, TOTAL_REAL_WORLD_TIME);
 
 	outcol.rgb = lig2col(skylig);
 

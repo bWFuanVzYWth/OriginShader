@@ -1,18 +1,18 @@
 {
     "format_version": 2,
     "header": {
-        "description": "交流1群:1090829462",
-        "name": "Origin Shader 3.3.0",
-        "uuid": "0575c61f-a5da-4b7f-9961-ffda29080310",
-        "version": [ 3, 3, 0 ],
+        "description": "OriginShader是一个开源的光影\n欢迎加入交流1群:1090829462",
+        "name": "Origin Shader 3.3.5",
+        "uuid": "0575c61f-a5da-4b7f-9961-ffda29080315",
+        "version": [ 3, 3, 5 ],
         "min_engine_version": [ 1, 16, 100 ]
     },
     "modules": [
         {
             "description": "",
             "type": "resources",
-            "uuid": "53644fac-a276-42e5-843f-a3c6f1690310",
-            "version": [ 3, 3, 0 ]
+            "uuid": "53644fac-a276-42e5-843f-a3c6f1690315",
+            "version": [ 3, 3, 5 ]
         }
     ]
 }

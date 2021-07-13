@@ -1,0 +1,42 @@
+#version 300 es
+#pragma optimize(on)
+precision highp float;
+
+#include "fragmentVersionCentroid.h"
+
+#include "shaderfunction.lin"
+
+flat varying vec3 campos;
+flat varying vec3 clocampos;
+
+flat varying vec3 sunvec;
+flat varying vec3 orisunlig;
+flat varying vec3 closunlig;
+flat varying vec3 closkylum;
+
+varying vec4 skypos;
+
+#include "uniformWorldConstants.h"
+#include "uniformInterFrameConstants.h"
+#include "uniformPerFrameConstants.h"
+#include "uniformShaderConstants.h"
+#include "util.h"
+
+LAYOUT_BINDING(0) uniform sampler2D TEXTURE_0;
+
+void main()
+{
+	vec4 outcol = vec4(1.0);
+
+	vec3 skyvec = normalize(skypos.xyz);
+
+	vec3 skylig = vec3(0.0);
+
+	vec4 thr = texelFetch(TEXTURE_0, (ivec2(gl_FragCoord.xy) + 2400) % 256, 0);
+
+	skylig = skyrender(skylig, campos, skyvec, orisunlig, closunlig, closkylum, sunvec, thr, TOTAL_REAL_WORLD_TIME);
+
+	outcol.rgb = lig2col(skylig);
+
+	gl_FragColor = outcol;
+}

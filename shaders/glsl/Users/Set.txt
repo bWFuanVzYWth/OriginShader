@@ -2,66 +2,104 @@
 //基础选项 Basic options
 
 #define TIMESYSTEM 1
-//1 天空同步地面但不准确    The sky is synchronized with the ground, but it's not accurate
-//2 天空准确但不同步地面    The sky is accurate but not synchronized with the ground
+//1 天空同步地面但不准确
+//1 The sky is synchronized with the ground, but it's not accurate
+//2 天空准确但不同步地面
+//2 The sky is accurate but not synchronized with the ground
 
 #define PLANET_ATMOSPHERE 0
-//1 开启太空模式    Space Mode ON
-//0 关闭太空模式    Space Mode Off
+//1 开启太空模式
+//1 Space Mode ON
+//0 关闭太空模式
+//0 Space Mode Off
 
 #define FAST_CLOUD 0
-//1 低质量但是更快速的云    Low quality but faster clouds
-//0 高质量但是更卡顿的云    High quality but lagger clouds
-
-#define FAST_BRDF 0
-//1 低质量但是更快速的BRDF    Low quality but faster BRDF
-//0 高质量但是更卡顿的BRDF    High quality but lagger BRDF
+//1 低质量但是更快速的云
+//1 Low quality but faster clouds
+//0 高质量但是更卡顿的云
+//0 High quality but lagger clouds
 
 
 
 #define SUNCOL vec3(1.0000, 1.0000, 1.0000)
 #define SUNLIGHT_A 12.5
-//R G B 太空中阳光的颜色    Color of sunlight in space
-//A 阳光的亮度    Luminance of the sunlight
+//R G B 太空中阳光的颜色
+//R G B Color of sunlight in space
+//A 阳光的亮度
+//A Luminance of the sunlight
 
 #define MOOCOL vec3(0.8289, 0.8527, 1.0000)
 #define MOOLIGHT_A 0.5
-//R G B 太空中月光的颜色    Color of moonlight in space
-//A 月光的亮度    Luminance of the moonlight
+//R G B 太空中月光的颜色
+//R G B Color of moonlight in space
+//A 月光的亮度
+//A Luminance of the moonlight
 
 #define POICOL vec3(1.0000, 0.4970, 0.1879)
-#define POILIGHT_A 30.0
-//R G B 灯光的颜色   Color of lamplight
-//A 灯光的亮度    Luminance of the lamplight
+#define POILIGHT_A 25.0
+//R G B 灯光的颜色
+//R G B Color of lamplight
+//A 灯光的亮度
+//A Luminance of the lamplight
+
+#define ENVCOL vec3(1.0000, 1.0000, 1.0000)
+#define ENVLIGHT_A 0.01
+//R G B 环境光颜色
+//R G B Color of environment light
+//A 环境光强度
+//A Luminance of the environment light
 
 #define GRAY vec3(0.18, 0.18, 0.18)
-//R G B 环境光颜色    Ambient color
+//R G B 平均反射率
+//R G B average reflectance
 
 
 
 #define SUNDEC 0.2
-//太阳偏角    Solar declination
+//太阳偏角
+//Solar declination
 
-#define SUN_R 0.02
-//太阳的半径，单位为弧度    The radius of the sun, in radians
+#define SUN_R 0.015
+//太阳的半径，单位为弧度
+//The radius of the sun, in radians
 
 
+
+#define USE_WATER_TEXTURE 0
+//使用原版水面材质
+//Use vanilla water surface material
+
+#define USE_NORMAL_MAP 1
+//1 使用自动生成的法线
+//0 禁用自动生成的法线
+
+#define NORMAL_MAP_FIX 1
+//修复法线宽度不一直的问题
+
+#define NORMAL_MAP_STRENGTH 1.0
+//法线映射强度
+
+#define NORMAL_MAP_W 1.5
+//法线映射宽度
+
+#define FLUORESCENCE 1.0
+//材质荧光强度
+//Default fluorescence
 
 #define ROUGHNESS 1.0
-//材质默认粗糙度    Default roughness
+//材质默认粗糙度
+//Default roughness
 
 
-
-#define USE_WATER_TEXTURE 1
-//使用原版水面材质    Use vanilla water surface material
 
 #define TONEMAP 2
-//0 none tonemap，会出现过曝    There will be overexposure
-//1 ACESToneMapping，色彩较鲜艳    The color is bright
-//2 FilmicToneMapping，色彩较柔和    The color is softer
+//0 None
+//1 ACES
+//2 Filmic
 
 #define LUM 1.0
-//全局亮度    Global brightness
+//全局亮度
+//Global brightness
 
 
 
@@ -70,26 +108,26 @@
 //太空模式默认海拔，用于大气层建模，单位为km
 //The default altitude of space mode is used for atmosphere modeling, in km
 
-#define SAMNUM 4.0
+#define SAMNUM 4.1
 //太空模式中阳光方向的采样数
 //Sampling number of sunlight direction in space mode
 
-#define MARNUM 8.0
+#define MARNUM 8.1
 //太空模式中视线方向的基础采样数
 //将由程序在设置的基础上自动调整
 //The number of basic samples in line of sight direction in space mode.
 //It will be automatically adjusted by the program based on the settings.
 
 #else
-#define ELEVATION 1.0
+#define ELEVATION 1.5
 //物理天空默认海拔，用于大气层建模，单位为km
 //The default altitude of sky mode is used for atmosphere modeling, in km
 
-#define SAMNUM 2.0
+#define SAMNUM 2.1
 //物理天空中阳光方向的采样数
 //Sampling number of sunlight direction in sky mode
 
-#define MARNUM 3.0
+#define MARNUM 2.1
 //物理天空中视线方向的基础采样数
 //将由程序在设置的基础上自动调整
 //The number of basic samples in line of sight direction in sky mode.
@@ -100,25 +138,33 @@
 
 
 #define O3 (0.005 * vec3(3.426, 8.298, 0.356) * 0.06)
-//臭氧浓度    Ozone
+//臭氧浓度
+//Ozone
 #define LR (0.005 * vec3(0.580, 1.35, 3.31))
-//瑞利散射强度    Rayleigh scattering
+//瑞利散射强度
+//Rayleigh scattering
 #define LM (0.050 * vec3(0.2, 0.2, 0.2))
-//米散射强度    Mie scattering
+//米散射强度
+//Mie scattering
 
 
 
 #define CLOINTNUM  8.0
 #define CLOSAMNUM  2.0
 #define CLOMARNUM  2.0
-//果冻云形状，体素求交次数    Jelly cloud shape, number of voxel intersection
-//果冻云光照，体素求交次数    Jelly cloud illumination, number of voxel intersection
-//果冻云渲染的采样数    The number of samples for jelly cloud rendering
+//果冻云形状，体素求交次数
+//Jelly cloud shape, number of voxel intersection
+//果冻云光照，体素求交次数
+//Jelly cloud illumination, number of voxel intersection
+//果冻云渲染的采样数
+//The number of samples for jelly cloud rendering
 
-#define CLOUD_LM 5.0
-//云的浓度    Attenuation coefficient of cloud to light
+#define CLOUD_LM 4.0
+//云的浓度
+//Attenuation coefficient of cloud to light
 #define CLOUD_SPEED vec2(0.02, 0.05)
-//云的速度，单位km/s    Speed of cloud, in km / S
+//云的速度，单位km/s
+//Speed of cloud, in km / S
 
 
 
@@ -178,8 +224,11 @@
 
 
 
-#define F0          0.04
-#define F0_WATER    0.0203327   //水，20˚C
-#define F0_GLASS    0.0349396   //石英玻璃
-#define F0_DIAMOND  0.1720110
+#define F0          vec3(0.040)
+#define F0_LEAVES   vec3(0.020)
+
+#define F0_WATER    vec3(0.020)
+#define F0_GLASS    vec3(0.035)
+#define F0_DIAMOND  vec3(0.172)
+
 //F0 = ((n1-n2)/(n1+n2))^2, n(air) = 1.00029
