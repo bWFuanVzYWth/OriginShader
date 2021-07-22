@@ -143,7 +143,7 @@ void main()
 #endif
 
 #if !USE_ALPHA_TEST && !defined(SEASONS) && !defined(SEASONS_FAR) && defined(BLEND)
-			if (col.a < 0.999)
+			if (col.a < 0.999) //water
 		{
 			sunlig = grosunlig * getshadow(uv1, varcol);
 			Control = s_c(true, false, false, true);
@@ -153,7 +153,7 @@ void main()
 			Material = s_m(0.0, gamma2line(col.rgb), F0_WATER);
 #endif
 			N = getwatnor(invTBN, chupos, TOTAL_REAL_WORLD_TIME);
-			outcol.a = 0.0;
+			outcol.a = F0_WATER.g;
 		}
 		else
 #endif
@@ -223,7 +223,7 @@ void main()
 		{
 			sunsca = scattering_BSDF(Material.BaseColor) * sunlig;
 			poisca = scattering_BSDF(Material.BaseColor) * poilig;
-			envsca = scattering_BSDF(Material.BaseColor) * envlig;
+			envsca = Material.BaseColor * envlig;
 		}
 
 		if (Control.skyref)

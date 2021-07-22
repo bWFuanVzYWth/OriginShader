@@ -571,7 +571,10 @@ vec4 getvarcol(vec4 c)
 	}
 	else
 	{
-		c.a = c.a < 0.001 ? getleaao(c.rgb) : getgraao(c.rgb);
+		if (c.a < 0.001)
+			c.a = getleaao(c.rgb);
+		else
+			c.a = getgraao(c.rgb);
 		c.rgb = c.rgb / c.a;
 	}
 	return c;
@@ -658,30 +661,37 @@ float getclopm(vec3 sunvec, vec3 marvec)
 	return dot(vec3(pm0, pm1, pm2), vec3(0.1, 0.8, 0.1));
 }
 
-vec2 atmads(vec3 sampos, vec3 sunvec, vec2 adm)
+//r2 = 采样点处的行星半径
+//adm = 采样点处的两种消光系数
+//PoL = dot(sunvec, -sampos)
+//传递这几个数值仅用于优化，因为往往存在重复计算
+vec2 atmads(vec3 sampos, vec3 sunvec, float r2, float PoL, vec2 adm)
 {
 	vec2 adssum = vec2(0.0);
 
-	vec3 maxpos = sampos + max(dot(-sampos, sunvec), 0.0) * sunvec;
-	vec2 mp = airden(maxpos);
+	vec3 maxpos = sampos + max(PoL, 0.0) * sunvec;
 
-	float em = mp.x - adm.x;
-	float dp = (-2.0 * mp.x + adm.x) * (0.99999 / SAMNUM); //1.0 -> 0.99999
+	//仅用到瑞利散射
+	float mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
+
+	float em = mpx - adm.x;
+	float dp = (-2.0 * mpx + adm.x) * (0.99999 / SAMNUM); //1.0 -> 0.99999
 
 	vec3 t0;
-	vec3 t1 = vec3(adm, dot(sampos, sampos));
+	vec3 t1 = vec3(adm, r2);
 
 	for (float j = 1.0; j <= SAMNUM; j++)
 	{
-		float p = mp.x - abs(em + dp * j);
+		float p = mpx - abs(em + dp * j);
 		float h = log(p) * -HR;
+		float r = h + EARTH_R;
 
 		t0 = t1;
-		t1 = vec3(p, exp(h * (1.0 / -HM)), pow2(h + EARTH_R));
+		t1 = vec3(p, exp(h * (1.0 / -HM)), r * r);
 
-		float len = dot(sunvec, -sampos);
-		float q = sqrt(len * len + t1.z - t0.z);
-		float l = (t1.z > t0.z ? q : -q) + len;
+		PoL = dot(sampos, -sunvec);
+		float q = sqrt(PoL * PoL + t1.z - t0.z);
+		float l = (t1.z > t0.z ? q : -q) + PoL;
 
 		sampos += l * sunvec;
 
@@ -694,15 +704,21 @@ vec2 atmads(vec3 sampos, vec3 sunvec, vec2 adm)
 
 vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunvec, float thr)
 {
-	float skylineh = sqrt(1.0 - pow2(EARTH_R / marpos.y));
-	float marnum = pow(abs(stavec.y + skylineh) + 0.01, -0.4) * MARNUM;
-	marnum = fract(marnum) > thr ? ceil(marnum) : floor(marnum);
-	marnum = min(marnum, 256.0);
+	const float R2_9996 = (EARTH_R * 0.9996) * (EARTH_R * 0.9996);
+	const float R2_9995 = (EARTH_R * 0.9995) * (EARTH_R * 0.9995);
+	const float R2_9994 = (EARTH_R * 0.9994) * (EARTH_R * 0.9994);
+
+	float marnum = pow(abs(stavec.y + sqrt(1.0 - pow2(EARTH_R / marpos.y))) + 0.01, -0.4) * MARNUM;
+	marnum = min(64.0, fract(marnum) > thr ? ceil(marnum) : floor(marnum));
+
+	float r2 = dot(marpos, marpos);
+	float PoV = dot(marpos, -stavec);
+	float PoL = dot(marpos, -sunvec);
 
 	vec2 admsum = vec2(0.0);
 
 	vec3 t0;
-	vec3 t1 = vec3(airden(marpos), dot(marpos, marpos));
+	vec3 t1 = vec3(exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM))), r2);
 
 	vec3 marsumr = vec3(0.0);
 	vec3 expodr0;
@@ -712,46 +728,65 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 	vec3 expodm0;
 	vec3 expodm1 = vec3(0.0);
 
-	if (nohitraybal(EARTH_R * 0.9996, marpos, sunvec))
+	if ((r2 > R2_9996 && PoL < 0.0) || PoL * PoL + r2 < r2)
 	{
 		//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
-		vec2 adorigin = atmads(marpos, sunvec, t1.xy);
-		vec3 odorigin = RO * adorigin.x + LM * adorigin.y;
-		vec3 expodorigin = exp(-odorigin);
+		vec2 adorigin = atmads(marpos, sunvec, r2, PoL, t1.xy);
+		vec3 expodorigin = exp((-RO) * adorigin.x + (-LM) * adorigin.y);
 
 		expodr1 = expodorigin * t1.x;
 		expodm1 = expodorigin * t1.y;
 	}
 
-	float maxl = intraybal(EARTH_R * 0.9995, marpos, stavec);
-	bool hitflag = maxl >= 0.0;
+	float t = PoV * PoV + R2_9995;
+	bool r2R2 = r2 > R2_9995;
+	bool nohitflag = ((r2R2 && PoV < 0.0) || t < r2);
 
-	vec3 maxpos = marpos + (hitflag ? maxl : max(dot(-marpos, stavec), 0.0)) * stavec;
-	vec2 mp = airden(maxpos);
+	float mpx;
+	float em;
+	float dp;
 
-	float em = mp.x - t1.x;
-	float dp = (hitflag ? (-em) : (-2.0 * mp.x + t1.x)) * (0.99999 / marnum); //1.0 -> 0.99999
+	if (nohitflag)
+	{
+		vec3 maxpos = marpos + max(PoV, 0.0) * stavec;
+		mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
+		em = mpx - t1.x;
+		dp = (-2.0 * mpx + t1.x) * (0.99999 / marnum); //1.0 -> 0.99999
+	}
+	else
+	{
+		float q = sqrt(t - r2);
+
+		vec3 maxpos = marpos + ((r2R2 ? -q : q) + PoV) * stavec;
+		mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
+		em = mpx - t1.x;
+		dp = -em * (0.99999 / marnum); //1.0 -> 0.99999
+	}
 
 	for (float j = 1.0; j <= marnum; j++)
 	{
-		float p = -abs(em + dp * j) + mp.x;
+		float p = -abs(em + dp * j) + mpx;
 		float h = log(p) * -HR;
+		float r = h + EARTH_R;
+		r2 = r * r;
 
 		t0 = t1;
-		t1 = vec3(p, exp(h * (1.0 / -HM)), pow2(h + EARTH_R));
+		t1 = vec3(p, exp(h * (1.0 / -HM)), r2);
 
-		float len = dot(stavec, -marpos);
-		float q = sqrt(len * len + t1.z - t0.z);
-		float l = (t1.z > t0.z ? q : -q) + len;
+		PoV = dot(marpos, -stavec);
+		float q = sqrt(PoV * PoV + t1.z - t0.z);
+		float l = (t1.z > t0.z ? q : -q) + PoV;
 
 		marpos += l * stavec;
 
 		admsum += (t0.xy + t1.xy) * 0.5 * l; //不能延迟常量计算
 
-		//如果直接用r会有奇怪的条纹
-		if (nohitraybal(EARTH_R * 0.9994, marpos, sunvec))
+		PoL = dot(marpos, -sunvec);
+
+		//如果直接用EARTH_R会有奇怪的条纹
+		if ((r2 > R2_9994 && PoL < 0.0) || PoL * PoL + R2_9994 < r2)
 		{
-			vec2 adssum = atmads(marpos, sunvec, t1.xy);
+			vec2 adssum = atmads(marpos, sunvec, r2, PoL, t1.xy);
 
 			vec2 ad = adssum + admsum;
 			vec3 od = RO * ad.x + LM * ad.y;
@@ -774,19 +809,26 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 	float pm = getairpm(sunvec, stavec);
 
 	vec3 insca = orisunlig * (pr * LR * marsumr + pm * LM * marsumm);
-	vec3 outsca = hitflag ? vec3(0.0) : skylig * exp((-RO) * admsum.x + (-LM) * admsum.y);
+	vec3 outsca = nohitflag ? skylig * exp((-RO) * admsum.x + (-LM) * admsum.y) : vec3(0.0);
 
 	return outsca + insca;
 }
 
 void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunvec, const float marnum)
 {
+	const float R2_9996 = (EARTH_R * 0.9996) * (EARTH_R * 0.9996);
+	const float R2_9994 = (EARTH_R * 0.9994) * (EARTH_R * 0.9994);
+
 	vec3 delpos = stapos - marpos;
 	vec3 stavec = normalize(delpos);
 
+	float r2 = dot(marpos, marpos);
+	float PoV = dot(marpos, -stavec);
+	float PoL = dot(marpos, -sunvec);
+
 	vec2 admsum = vec2(0.0);
 	vec2 adm0;
-	vec2 adm1 = airden(marpos);
+	vec2 adm1 = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
 
 	vec3 marsumr = vec3(0.0);
 	vec3 expodr0;
@@ -796,12 +838,11 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 	vec3 expodm0;
 	vec3 expodm1 = vec3(0.0);
 
-	if (nohitraybal(EARTH_R * 0.9996, marpos, sunvec))
+	if ((r2 > R2_9996 && PoL < 0.0) || PoL * PoL + r2 < r2)
 	{
 		//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
-		vec2 adorigin = atmads(marpos, sunvec, adm1);
-		vec3 odorigin = RO * adorigin.x + LM * adorigin.y;
-		vec3 expodorigin = exp(-odorigin);
+		vec2 adorigin = atmads(marpos, sunvec, r2, PoL, adm1);
+		vec3 expodorigin = exp((-RO) * adorigin.x + (-LM) * adorigin.y);
 
 		expodr1 = expodorigin * adm1.x;
 		expodm1 = expodorigin * adm1.y;
@@ -813,14 +854,17 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 	{
 		marpos += l * stavec;
 
+		r2 = dot(marpos, marpos);
+		PoL = dot(marpos, -sunvec);
+
 		adm0 = adm1;
-		adm1 = airden(marpos);
+		adm1 = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
 		admsum += (adm0 + adm1) * 0.5 * l; //不能延迟常量计算
 
-		//如果直接用r会有奇怪的条纹
-		if (nohitraybal(EARTH_R * 0.9994, marpos, sunvec))
+		//如果直接用EARTH_R会有奇怪的条纹
+		if ((r2 > R2_9994 && PoL < 0.0) || PoL * PoL + R2_9994 < r2)
 		{
-			vec2 adssum = atmads(marpos, sunvec, adm1);
+			vec2 adssum = atmads(marpos, sunvec, r2, PoL, adm1);
 
 			vec2 ad = adssum + admsum;
 			vec3 od = RO * ad.x + LM * ad.y;
@@ -852,7 +896,7 @@ vec3 getsunlig(vec3 marpos, vec3 orisunlig, vec3 sunvec)
 	if (nohitraybal(EARTH_R * 0.9999, marpos, sunvec))
 	{
 		vec2 adm = airden(marpos);
-		vec2 adorigin = atmads(marpos, sunvec, adm);
+		vec2 adorigin = atmads(marpos, sunvec, dot(marpos, marpos), dot(sunvec, -marpos), adm);
 		return orisunlig * exp((-RO) * adorigin.x + (-LM) * adorigin.y);
 	}
 	else
@@ -1136,10 +1180,8 @@ void setfog(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 oris
 
 vec3 skyfog(vec3 skylig, vec3 stapos, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunvec, float thr)
 {
-	float skylineh = sqrt(1.0 - pow2(EARTH_R / marpos.y));
-	float marnum = pow(abs(stavec.y + skylineh) + 0.01, -0.2) * MARNUM;
-	marnum = fract(marnum) > thr ? ceil(marnum) : floor(marnum);
-	marnum = min(marnum, 256.0);
+	float marnum = pow(abs(stavec.y + sqrt(1.0 - pow2(EARTH_R / marpos.y))) + 0.01, -0.4) * MARNUM;
+	marnum = min(64.0, fract(marnum) > thr ? ceil(marnum) : floor(marnum));
 
 	vec3 insca;
 	vec3 outsca;
