@@ -28,60 +28,19 @@
 
 #include "Users/Set.txt"
 
+//function builder
+#define ANY_VEC(fname, vname, code) \
+	float fname(float vname){code} vec2 fname(vec2 vname){code} vec3 fname(vec3 vname){code} vec4 fname(vec4 vname) { code }
+
 //math
-
-float pow3_2(float x)
-{
-	//return pow(x, 3.0/2.0);
-	return x * sqrt(x);
-}
-
-float pow2(float x)
-{
-	return x * x;
-}
-
-vec2 pow2(vec2 x)
-{
-	return x * x;
-}
-
-vec3 pow2(vec3 x)
-{
-	return x * x;
-}
-
-vec4 pow2(vec4 x)
-{
-	return x * x;
-}
-
-float pow3(float x)
-{
-	return x * x * x;
-}
-
-float pow4(float x)
-{
-	float x2 = x * x;
-	return x2 * x2;
-}
-
-float pow5(float x)
-{
-	float x2 = x * x;
-	return x2 * x2 * x;
-}
-
-float min3(vec3 v)
-{
-	return min(min(v.x, v.y), v.z);
-}
-
-float max3(vec3 v)
-{
-	return max(max(v.x, v.y), v.z);
-}
+ANY_VEC(pow3_2, x, return x * sqrt(x);)
+ANY_VEC(pow2, x, return x * x;)
+ANY_VEC(pow3, x, return x * pow2(x);)
+ANY_VEC(pow4, x, return pow2(pow2(x));)
+ANY_VEC(pow5, x, return x * pow4(x);)
+ANY_VEC(pow6, x, return pow2(pow3(x));)
+ANY_VEC(pow7, x, return x * pow6(x);)
+ANY_VEC(pow8, x, return pow2(pow4(x));)
 
 bool equ3(vec3 v)
 {
@@ -199,7 +158,9 @@ vec4 maraabb(vec3 o, vec3 v, vec3 a, vec3 b)
 	return mint2;
 }
 
-//球心在原点
+//完整的射线与球求交
+//大部分时候都可以预计算中间变量并简化逻辑，此函数仅用于理解
+/*
 float intraybal(float r, vec3 p, vec3 d)
 {
 	float r2 = r * r;
@@ -207,29 +168,29 @@ float intraybal(float r, vec3 p, vec3 d)
 	float p2 = dot(p, p);
 	float t = l * l + r2;
 	float q = sqrt(t - p2);
-	//可以提前判定无交点的情况，但动态分支反而会造成开销故不使用提前判定
 	return ((p2 > r2 && l < 0.0) || t < p2) ? -1.0 : (r2 > p2 ? q : -q) + l;
+}
+*/
+
+//球心在原点
+float intraybal(float R2, float r2, float PoD)
+{
+	float t = PoD * PoD + R2;
+	float q = sqrt(t - r2);
+	return ((r2 > R2 && PoD < 0.0) || t < r2) ? -1.0 : (R2 > r2 ? q : -q) + PoD;
 }
 
 //球心在原点且只求解距离
-float lenraybal(float r, vec3 p, vec3 d)
+float lenraybal(float R2, float r2, float PoD)
 {
-	float r2 = r * r;
-	float l = dot(d, -p);
-	float p2 = dot(p, p);
-	float t = l * l + r2;
-	float q = sqrt(t - p2);
-	return (r2 > p2 ? q : -q) + l;
+	float q = sqrt(PoD * PoD + R2 - r2);
+	return (R2 > r2 ? q : -q) + PoD;
 }
 
 //球心在原点且只进行相交测试
-bool nohitraybal(float r, vec3 p, vec3 d)
+bool nohitraybal(float R2, float r2, float PoD)
 {
-	float r2 = r * r;
-	float l = dot(d, -p);
-	float p2 = dot(p, p);
-	float t = l * l + r2;
-	return ((p2 > r2 && l < 0.0) || t < p2);
+	return ((r2 > R2 && PoD < 0.0) || PoD * PoD + R2 < r2);
 }
 
 mat3 getinvTBN(vec2 dxuv, vec2 dyuv, vec4 dxp, vec4 dyp, vec3 wornor)
@@ -283,7 +244,6 @@ vec3 tonemap(vec3 c, float l)
 }
 
 //color
-
 float gamma2line(float x)
 {
 	return pow(x, GAMMA);
@@ -522,21 +482,12 @@ float voro_2D(vec2 p)
 float fogtime(vec4 fogcol)
 {
 	//三次多项式拟合，四次多项式拟合曲线存在明显突出故不使用
-	const vec4 k = vec4(349.305545, -159.858192, 30.557216, -1.628452);
-	const float x0 = 1.0;
-	float x1 = fogcol.g;
-	float x2 = x1 * x1;
-	float x3 = x2 * x1;
-	return fogcol.g > 0.213101 ? 1.0 : dot(vec4(x3, x2, x1, x0), k);
+	return fogcol.g > 0.213101 ? 1.0 : (((349.305545 * fogcol.g - 159.858192) * fogcol.g + 30.557216) * fogcol.g - 1.628452);
 }
 
 float uv1time(float r1)
 {
-	//四次多项式拟合
-	const vec4 k = vec4(39.581994, -74.236058, 33.842220, 9.368113);
-	float r2 = r1 * r1;
-	float r4 = r2 * r2;
-	return dot(vec4(r4, r2 * r1, r2, r1), k) - 7.363836;
+	return (((39.581994 * r1 - 74.236058) * r1 + 33.842220) * r1 + 9.368113) * r1 - 7.363836;
 }
 
 float curtime(vec4 curcol, vec4 fogcol)
@@ -590,24 +541,30 @@ float getshadow(vec2 uv1, vec4 varcol)
 
 float uv1x2lig(float uv1x)
 {
-	float l = max((14.0 / 16.0) - uv1x, 0.0) * 16.0 + 0.5;
-	return 1.0 / (l * l) * (16.0 / 15.0) * uv1x;
+#define UX2L(l) (1.0 / (l * l))
+
+	float l = saturate((14.0 / 16.0) - uv1x) * 16.0 + 0.5;
+	return max(0.0, UX2L(l) - UX2L(15.0) * (1.0 - uv1x));
 }
 
 float uv1y2lig(float uv1y)
 {
-	float l = ((15.0 / 16.0) - uv1y) * 16.0 + (1.0 / 16.0);
-	return (2.0 / MATH_PI) * atan(3.0 / l) * (16.0 / 15.0) * uv1y;
+#define UY2L(l) ((2.0 / MATH_PI) * atan(3.0 / l))
+
+	float l = saturate((15.0 / 16.0) - uv1y) * 16.0;
+	return max(0.0, UY2L(l) - UY2L(15.0) * (1.0 - uv1y));
 }
 
 //atmosphere
 
+//大部分时候都可以手动内联并简化逻辑，此函数仅用于理解
+/*
 vec2 airden(vec3 pos)
 {
-	//float h = max(length(pos) - r, 0.0);
 	float h = length(pos) - EARTH_R;
 	return exp(h * (1.0 / vec2(-HR, -HM)));
 }
+*/
 
 float getpr(float c)
 {
@@ -620,50 +577,15 @@ float getpm(float c, float g)
 	return (3.0 / (8.0 * MATH_PI)) * ((1.0 - g * g) * (1.0 + c * c)) / ((2.0 + g * g) * pow3_2(1.0 + g * g - 2.0 * g * c));
 }
 
-float getairpr(vec3 sunvec, vec3 marvec)
+float getpm3(float c, const vec3 pm3, const vec3 g3)
 {
-	float c = dot(sunvec, marvec);
-	return getpr(c);
+	float pm0 = getpm(c, g3.x);
+	float pm1 = getpm(c, g3.y);
+	float pm2 = getpm(c, g3.z);
+
+	return dot(vec3(pm0, pm1, pm2), pm3);
 }
 
-float getairpm(vec3 sunvec, vec3 marvec)
-{
-	float c = dot(sunvec, marvec);
-
-	float pm0 = getpm(c, 0.76);
-	float pm1 = getpm(c, 0.87);
-	float pm2 = getpm(c, 0.98);
-
-	return dot(vec3(pm0, pm1, pm2), vec3(0.8, 0.1, 0.1));
-}
-float getfogpr(vec3 sunvec, vec3 marvec)
-{
-	float c = dot(sunvec, marvec);
-	return getpr(c);
-}
-
-float getfogpm(vec3 sunvec, vec3 marvec)
-{
-	float c = dot(sunvec, marvec);
-	float pm0 = getpm(c, 0.76);
-	float pm1 = getpm(c, 0.92);
-	return dot(vec2(pm0, pm1), vec2(0.8, 0.2));
-}
-
-float getclopm(vec3 sunvec, vec3 marvec)
-{
-	float c = dot(sunvec, marvec);
-
-	float pm0 = getpm(c, -0.25);
-	float pm1 = getpm(c, +0.10);
-	float pm2 = getpm(c, +0.95);
-
-	return dot(vec3(pm0, pm1, pm2), vec3(0.1, 0.8, 0.1));
-}
-
-//r2 = 采样点处的行星半径
-//adm = 采样点处的两种消光系数
-//PoL = dot(sunvec, -sampos)
 //传递这几个数值仅用于优化，因为往往存在重复计算
 vec2 atmads(vec3 sampos, vec3 sunvec, float r2, float PoL, vec2 adm)
 {
@@ -690,8 +612,7 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float r2, float PoL, vec2 adm)
 		t1 = vec3(p, exp(h * (1.0 / -HM)), r * r);
 
 		PoL = dot(sampos, -sunvec);
-		float q = sqrt(PoL * PoL + t1.z - t0.z);
-		float l = (t1.z > t0.z ? q : -q) + PoL;
+		float l = lenraybal(t1.z, t0.z, PoL);
 
 		sampos += l * sunvec;
 
@@ -702,17 +623,16 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float r2, float PoL, vec2 adm)
 	return adssum * 0.5;
 }
 
-vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunvec, float thr)
+vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunvec, float thr)
 {
-	const float R2_9996 = (EARTH_R * 0.9996) * (EARTH_R * 0.9996);
-	const float R2_9995 = (EARTH_R * 0.9995) * (EARTH_R * 0.9995);
-	const float R2_9994 = (EARTH_R * 0.9994) * (EARTH_R * 0.9994);
+	const float R2 = EARTH_R * EARTH_R;
+	const float R2_9999 = (EARTH_R * 0.9999) * (EARTH_R * 0.9999);
 
-	float marnum = pow(abs(stavec.y + sqrt(1.0 - pow2(EARTH_R / marpos.y))) + 0.01, -0.4) * MARNUM;
-	marnum = min(64.0, fract(marnum) > thr ? ceil(marnum) : floor(marnum));
+	float marnum = pow(abs(marvec.y + sqrt(1.0 - pow2(EARTH_R / marpos.y))) + 0.0001, -0.5) * MARNUM;
+	marnum = clamp(fract(marnum) > thr ? ceil(marnum) : floor(marnum), 2.0, 64.0);
 
 	float r2 = dot(marpos, marpos);
-	float PoV = dot(marpos, -stavec);
+	float PoV = dot(marpos, -marvec);
 	float PoL = dot(marpos, -sunvec);
 
 	vec2 admsum = vec2(0.0);
@@ -728,7 +648,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 	vec3 expodm0;
 	vec3 expodm1 = vec3(0.0);
 
-	if ((r2 > R2_9996 && PoL < 0.0) || PoL * PoL + r2 < r2)
+	if(nohitraybal(R2, r2, PoL))
 	{
 		//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
 		vec2 adorigin = atmads(marpos, sunvec, r2, PoL, t1.xy);
@@ -738,8 +658,8 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 		expodm1 = expodorigin * t1.y;
 	}
 
-	float t = PoV * PoV + R2_9995;
-	bool r2R2 = r2 > R2_9995;
+	float t = PoV * PoV + R2;
+	bool r2R2 = r2 > R2;
 	bool nohitflag = ((r2R2 && PoV < 0.0) || t < r2);
 
 	float mpx;
@@ -748,7 +668,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 
 	if (nohitflag)
 	{
-		vec3 maxpos = marpos + max(PoV, 0.0) * stavec;
+		vec3 maxpos = marpos + max(PoV, 0.0) * marvec;
 		mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
 		em = mpx - t1.x;
 		dp = (-2.0 * mpx + t1.x) * (0.99999 / marnum); //1.0 -> 0.99999
@@ -757,7 +677,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 	{
 		float q = sqrt(t - r2);
 
-		vec3 maxpos = marpos + ((r2R2 ? -q : q) + PoV) * stavec;
+		vec3 maxpos = marpos + ((r2R2 ? -q : q) + PoV) * marvec;
 		mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
 		em = mpx - t1.x;
 		dp = -em * (0.99999 / marnum); //1.0 -> 0.99999
@@ -773,18 +693,17 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 		t0 = t1;
 		t1 = vec3(p, exp(h * (1.0 / -HM)), r2);
 
-		PoV = dot(marpos, -stavec);
-		float q = sqrt(PoV * PoV + t1.z - t0.z);
-		float l = (t1.z > t0.z ? q : -q) + PoV;
+		PoV = dot(marpos, -marvec);
+		float l = lenraybal(t1.z, t0.z, PoV);
 
-		marpos += l * stavec;
+		marpos += l * marvec;
 
 		admsum += (t0.xy + t1.xy) * 0.5 * l; //不能延迟常量计算
 
 		PoL = dot(marpos, -sunvec);
 
 		//如果直接用EARTH_R会有奇怪的条纹
-		if ((r2 > R2_9994 && PoL < 0.0) || PoL * PoL + R2_9994 < r2)
+		if (nohitraybal(R2_9999, r2, PoL))
 		{
 			vec2 adssum = atmads(marpos, sunvec, r2, PoL, t1.xy);
 
@@ -805,8 +724,9 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 	marsumr *= 0.5;
 	marsumm *= 0.5;
 
-	float pr = getairpr(sunvec, stavec);
-	float pm = getairpm(sunvec, stavec);
+	float c = dot(sunvec, marvec);
+	float pr = getpr(c);
+	float pm = getpm3(c, PM_AIR, G_AIR);
 
 	vec3 insca = orisunlig * (pr * LR * marsumr + pm * LM * marsumm);
 	vec3 outsca = nohitflag ? skylig * exp((-RO) * admsum.x + (-LM) * admsum.y) : vec3(0.0);
@@ -814,16 +734,16 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunve
 	return outsca + insca;
 }
 
-void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunvec, const float marnum)
+void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunvec, const float marnum, vec3 pm3, vec3 g3)
 {
-	const float R2_9996 = (EARTH_R * 0.9996) * (EARTH_R * 0.9996);
-	const float R2_9994 = (EARTH_R * 0.9994) * (EARTH_R * 0.9994);
+	const float R2 = EARTH_R * EARTH_R;
+	const float R2_9999 = (EARTH_R * 0.9999) * (EARTH_R * 0.9999);
 
 	vec3 delpos = stapos - marpos;
-	vec3 stavec = normalize(delpos);
+	vec3 marvec = normalize(delpos);
 
 	float r2 = dot(marpos, marpos);
-	float PoV = dot(marpos, -stavec);
+	float PoV = dot(marpos, -marvec);
 	float PoL = dot(marpos, -sunvec);
 
 	vec2 admsum = vec2(0.0);
@@ -838,7 +758,7 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 	vec3 expodm0;
 	vec3 expodm1 = vec3(0.0);
 
-	if ((r2 > R2_9996 && PoL < 0.0) || PoL * PoL + r2 < r2)
+	if(nohitraybal(R2, r2, PoL))
 	{
 		//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
 		vec2 adorigin = atmads(marpos, sunvec, r2, PoL, adm1);
@@ -852,7 +772,7 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 
 	for (float j = 1.0; j <= marnum; j++)
 	{
-		marpos += l * stavec;
+		marpos += l * marvec;
 
 		r2 = dot(marpos, marpos);
 		PoL = dot(marpos, -sunvec);
@@ -862,7 +782,7 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 		admsum += (adm0 + adm1) * 0.5 * l; //不能延迟常量计算
 
 		//如果直接用EARTH_R会有奇怪的条纹
-		if ((r2 > R2_9994 && PoL < 0.0) || PoL * PoL + R2_9994 < r2)
+		if (nohitraybal(R2_9999, r2, PoL))
 		{
 			vec2 adssum = atmads(marpos, sunvec, r2, PoL, adm1);
 
@@ -884,8 +804,9 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 	marsumr *= 0.5;
 	marsumm *= 0.5;
 
-	float pr = getfogpr(sunvec, stavec);
-	float pm = getfogpm(sunvec, stavec);
+	float c = dot(sunvec, marvec);
+	float pr = getpr(c);
+	float pm = getpm3(c, pm3, g3);
 
 	insca = (pr * LR * marsumr + pm * LM * marsumm);
 	outsca = exp((-(LR /*+ O3*/)) * admsum.x + (-LM) * admsum.y); //雾在近地表不考虑臭氧吸收
@@ -893,10 +814,15 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 
 vec3 getsunlig(vec3 marpos, vec3 orisunlig, vec3 sunvec)
 {
-	if (nohitraybal(EARTH_R * 0.9999, marpos, sunvec))
+	const float R2_9999 = (EARTH_R * 0.9999) * (EARTH_R * 0.9999);
+
+	float r2 = dot(marpos, marpos);
+	float PoL = dot(marpos, -sunvec);
+
+	if (nohitraybal(R2_9999, r2, PoL))
 	{
-		vec2 adm = airden(marpos);
-		vec2 adorigin = atmads(marpos, sunvec, dot(marpos, marpos), dot(sunvec, -marpos), adm);
+		vec2 adm = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
+		vec2 adorigin = atmads(marpos, sunvec, r2, PoL, adm);
 		return orisunlig * exp((-RO) * adorigin.x + (-LM) * adorigin.y);
 	}
 	else
@@ -940,8 +866,7 @@ float closamsun(vec3 sampos, vec3 aabbsam, vec3 sunvec, const float closamnum, c
 	for (float k = 0.0; k < closamnum && sampos.y > CLOUD_Y && sampos.y < (CLOUD_Y + CLOUD_H); k++)
 	{
 		vec4 intsun = maraabb(sampos, sunvec, aabbsam, aabbsam + CLOSIZ);
-		if (iscloud(aabbsam))
-			samsum += intsun.w;
+		samsum += iscloud(aabbsam) ? intsun.w : 0.0;
 		sampos += intsun.w * sunvec;
 		aabbsam += intsun.xyz * CLOSIZ;
 	}
@@ -970,7 +895,7 @@ vec3 cloudrender_fast(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 s
 	return skylig + (1.0 / (4.0 * MATH_PI)) * marsum * sunlig;
 }
 
-vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec, vec3 skylum, float gametime)
+vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec, vec3 skylum, float gametime, float thr)
 {
 	const vec3 CLOSIZ = vec3(CLOUD_W, CLOUD_H, CLOUD_W);
 
@@ -987,7 +912,10 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
 
 		if (iscloud(aabbmar))
 		{
-			float l = intclo.w * (1.0 / CLOMARNUM);
+			float marnum = intclo.w * (CLOMARNUM / CLOUD_H);
+			marnum = clamp(fract(marnum) > thr ? ceil(marnum) : floor(marnum), 2.0, 64.0);
+
+			float l = intclo.w / marnum;
 			vec3 marstep = l * marvec;
 
 			vec3 t_marpos = marpos;
@@ -1000,7 +928,7 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
 
 			float s = 0.0;
 
-			for (float j = 0.0; j < CLOMARNUM; j++)
+			for (float j = 0.0; j < marnum; j++)
 			{
 				t_marpos += marstep;
 
@@ -1024,7 +952,8 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
 		aabbmar += intclo.xyz * CLOSIZ;
 	}
 
-	float pm = getclopm(sunvec, marvec);
+	float c = dot(sunvec, marvec);
+	float pm = getpm3(c, PM_CLOUD, G_CLOUD);
 
 	vec3 insca = sunlig * (pm * CLOUD_LM * expsum);
 	vec3 outsca = skylig * exp(-CLOUD_LM * marsum);
@@ -1122,15 +1051,15 @@ vec3 getmetalF0(int c)
 //origin shader light system
 void setsunlig(bool issun, vec4 world1, vec3 campos, out vec3 orisunlig, out vec3 sunlig, out vec3 sunvec)
 {
-	const mat3 M = mat3(
-		cos(SUNDEC), 0.0, sin(SUNDEC),
-		0.0, 1.0, 0.0,
-		-sin(SUNDEC), 0.0, cos(SUNDEC));
+	const mat2 M = mat2(
+		cos(SUNDEC), sin(SUNDEC),
+		-sin(SUNDEC), cos(SUNDEC));
 	if (issun)
 		orisunlig = gamma2line(SUNCOL) * SUNLIGHT_A;
 	else
 		orisunlig = gamma2line(MOOCOL) * MOOLIGHT_A;
-	sunvec = M * normalize(world1.xyz);
+	sunvec = normalize(world1.xyz);
+	sunvec.xz = M * sunvec.xz;
 	sunlig = getsunlig(campos, orisunlig, sunvec);
 }
 
@@ -1169,37 +1098,44 @@ vec3 getpoilig(vec2 uv1)
 
 vec3 getearpos(vec3 campos, vec4 worpos)
 {
-	return campos + worpos.xyz * (1.0 / 16.0);
+	return campos + worpos.xyz * (1.0 / FOG_A);
 }
 
 void setfog(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 orisunlig, vec3 sunvec, vec2 uv1)
 {
-	atmsca(outsca, insca, stapos, marpos, sunvec, 8.0);
+	atmsca(outsca, insca, stapos, marpos, sunvec, MARNUM, PM_FOG, G_FOG);
 	insca *= uv1.y;
 }
 
-vec3 skyfog(vec3 skylig, vec3 stapos, vec3 marpos, vec3 stavec, vec3 orisunlig, vec3 sunvec, float thr)
+vec3 skyfog(vec3 skylig, vec3 stapos, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunvec, float thr)
 {
-	float marnum = pow(abs(stavec.y + sqrt(1.0 - pow2(EARTH_R / marpos.y))) + 0.01, -0.4) * MARNUM;
-	marnum = min(64.0, fract(marnum) > thr ? ceil(marnum) : floor(marnum));
+	float marnum = pow(abs(marvec.y + sqrt(1.0 - pow2(EARTH_R / marpos.y))) + 0.0001, -0.5) * MARNUM;
+	marnum = clamp(fract(marnum) > thr ? ceil(marnum) : floor(marnum), 2.0, 64.0);
 
 	vec3 insca;
 	vec3 outsca;
-	atmsca(outsca, insca, stapos, marpos, sunvec, marnum);
+	atmsca(outsca, insca, stapos, marpos, sunvec, marnum, PM_AIR, G_AIR);
 	return skylig * outsca + orisunlig * insca;
 }
 
 vec3 skyrender(vec3 skylig, vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunlig, vec3 skylum, vec3 sunvec, vec4 thr, float gametime)
 {
+	const float R2 = EARTH_R * EARTH_R;
+	const float R2_Y = (EARTH_R + CLOUD_Y) * (EARTH_R + CLOUD_Y);
+	const float R2_YH = (EARTH_R + CLOUD_Y + CLOUD_H) * (EARTH_R + CLOUD_Y + CLOUD_H);
+
 	bool needrendercloud = true;
-	float clolen = 0.0;
 	vec3 reaclopos = campos;
 	vec3 fakclopos = campos;
 
+	float r2 = dot(campos, campos);
+	float PoV = dot(campos, -skyvec);
+
 	if (campos.y < EARTH_R + CLOUD_Y)
 	{
-		clolen = intraybal(EARTH_R + CLOUD_Y, campos, skyvec);
-		if ((clolen < -0.5) || (!nohitraybal(EARTH_R, campos, skyvec)))
+		float clolen = intraybal(R2_Y, r2, PoV);
+		bool nohitear = nohitraybal(R2, r2, PoV);
+		if ((clolen < -0.5) || (!nohitear))
 		{
 			needrendercloud = false;
 		}
@@ -1209,12 +1145,10 @@ vec3 skyrender(vec3 skylig, vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunli
 			fakclopos = reaclopos;
 			fakclopos.y = CLOUD_Y + 0.00001;
 		}
-
-		needrendercloud = needrendercloud && nohitraybal(EARTH_R, campos, skyvec);
 	}
 	else if (campos.y > EARTH_R + CLOUD_Y + CLOUD_H)
 	{
-		float clolen = intraybal(EARTH_R + CLOUD_Y + CLOUD_H, campos, skyvec);
+		float clolen = intraybal(R2_YH, r2, PoV);
 		if (clolen < -0.5)
 		{
 			needrendercloud = false;
@@ -1227,18 +1161,17 @@ vec3 skyrender(vec3 skylig, vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunli
 		}
 	}
 
+	skylig = physicsun(skylig, orisunlig, sunvec, skyvec, SUN_R);
+
 #if FAST_CLOUD
 	skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec, thr.r);
 	skylig = cloudrender_fast(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
 #else
-
-	skylig = physicsun(skylig, orisunlig, sunvec, skyvec, SUN_R);
-
 	if (needrendercloud)
 	{
 		skylig = physicsky(skylig, reaclopos, skyvec, orisunlig, sunvec, thr.r);
-		skylig = cloudrender(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
-		skylig = skyfog(skylig, reaclopos, campos, skyvec, orisunlig, sunvec, thr.g);
+		skylig = cloudrender(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime, thr.g);
+		skylig = skyfog(skylig, reaclopos, campos, skyvec, orisunlig, sunvec, thr.b);
 	}
 	else
 	{

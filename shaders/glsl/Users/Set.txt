@@ -22,28 +22,28 @@
 
 
 #define SUNCOL vec3(1.0000, 1.0000, 1.0000)
-#define SUNLIGHT_A 12.5
+#define SUNLIGHT_A 13.0
 //R G B 太空中阳光的颜色
 //R G B Color of sunlight in space
 //A 阳光的亮度
 //A Luminance of the sunlight
 
-#define MOOCOL vec3(0.8289, 0.8527, 1.0000)
-#define MOOLIGHT_A 0.5
+#define MOOCOL vec3(0.6693, 0.7541, 1.0000)
+#define MOOLIGHT_A 0.7
 //R G B 太空中月光的颜色
 //R G B Color of moonlight in space
 //A 月光的亮度
 //A Luminance of the moonlight
 
-#define POICOL vec3(1.0000, 0.4970, 0.1879)
-#define POILIGHT_A 25.0
+#define POICOL vec3(1.0000, 0.5155, 0.2087)
+#define POILIGHT_A 20.0
 //R G B 灯光的颜色
 //R G B Color of lamplight
 //A 灯光的亮度
 //A Luminance of the lamplight
 
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
-#define ENVLIGHT_A 0.01
+#define ENVLIGHT_A 0.015
 //R G B 环境光颜色
 //R G B Color of environment light
 //A 环境光强度
@@ -103,16 +103,21 @@
 
 
 
+#define FOG_A 16.0
+//能见度，数值越大雾越淡
+
+
+
 #if PLANET_ATMOSPHERE
 #define ELEVATION 50.0
 //太空模式默认海拔，用于大气层建模，单位为km
 //The default altitude of space mode is used for atmosphere modeling, in km
 
-#define SAMNUM 4.1
+#define SAMNUM 4.0
 //太空模式中阳光方向的采样数
 //Sampling number of sunlight direction in space mode
 
-#define MARNUM 8.1
+#define MARNUM 6.0
 //太空模式中视线方向的基础采样数
 //将由程序在设置的基础上自动调整
 //The number of basic samples in line of sight direction in space mode.
@@ -123,11 +128,11 @@
 //物理天空默认海拔，用于大气层建模，单位为km
 //The default altitude of sky mode is used for atmosphere modeling, in km
 
-#define SAMNUM 2.1
+#define SAMNUM 2.0
 //物理天空中阳光方向的采样数
 //Sampling number of sunlight direction in sky mode
 
-#define MARNUM 2.1
+#define MARNUM 3.0
 //物理天空中视线方向的基础采样数
 //将由程序在设置的基础上自动调整
 //The number of basic samples in line of sight direction in sky mode.
@@ -137,21 +142,21 @@
 
 
 
-#define O3 (0.005 * vec3(3.426, 8.298, 0.356) * 0.06)
+#define O3 (0.007 * vec3(3.426, 8.298, 0.356) * 0.06)
 //臭氧浓度
 //Ozone
-#define LR (0.005 * vec3(0.580, 1.35, 3.31))
+#define LR (0.007 * vec3(0.580, 1.350, 3.310))
 //瑞利散射强度
 //Rayleigh scattering
-#define LM (0.050 * vec3(0.2, 0.2, 0.2))
+#define LM (0.007 * vec3(2.000, 2.000, 2.000))
 //米散射强度
 //Mie scattering
 
 
 
-#define CLOINTNUM  8.0
+#define CLOINTNUM  6.0
 #define CLOSAMNUM  2.0
-#define CLOMARNUM  2.0
+#define CLOMARNUM  3.0
 //果冻云形状，体素求交次数
 //Jelly cloud shape, number of voxel intersection
 //果冻云光照，体素求交次数
@@ -159,7 +164,7 @@
 //果冻云渲染的采样数
 //The number of samples for jelly cloud rendering
 
-#define CLOUD_LM 4.0
+#define CLOUD_LM 5.0
 //云的浓度
 //Attenuation coefficient of cloud to light
 #define CLOUD_SPEED vec2(0.02, 0.05)
@@ -184,6 +189,17 @@
 //Think about what you're doing, or you'd better not change the following settings
 
 ////////////////////////////////////////////////////////////////////
+
+#define PM_AIR vec3(0.10, 0.80, 0.10)
+#define G_AIR vec3(-0.15, 0.75, 0.95)
+
+#define PM_FOG vec3(0.10, 0.80, 0.10)
+#define G_FOG vec3(-0.15, 0.15, 0.75)
+
+#define PM_CLOUD vec3(0.10, 0.80, 0.10)
+#define G_CLOUD vec3(-0.15, 0.15, 0.95)
+
+
 
 #define CLOUD_W (1.0)
 #define CLOUD_H (1.0 / 3.0)
