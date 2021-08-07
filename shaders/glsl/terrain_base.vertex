@@ -4,7 +4,19 @@ precision highp float;
 
 #include "vertexVersionCentroid.h"
 
+#include "uniformWorldConstants.h"
+#include "uniformInterFrameConstants.h"
+#include "uniformPerFrameConstants.h"
+#include "uniformShaderConstants.h"
+#include "uniformRenderChunkConstants.h"
+
+#include "util.h"
+
 #include "shaderfunction.lin"
+
+#if TRY_MCPE_NETEASE
+#include "uniformExtraVectorConstants.h"
+#endif
 
 #ifndef BYPASS_PIXEL_SHADER
 _centroid out vec2 uv0;
@@ -31,14 +43,6 @@ out vec3 insca;
 out vec4 worpos;
 out vec4 chupos;
 #endif
-
-#include "uniformWorldConstants.h"
-#include "uniformInterFrameConstants.h"
-#include "uniformPerFrameConstants.h"
-#include "uniformShaderConstants.h"
-#include "uniformRenderChunkConstants.h"
-
-#include "util.h"
 
 attribute POS4 POSITION;
 attribute vec4 COLOR;
@@ -75,16 +79,21 @@ void main()
 	varcol = vec4(mix(vec3(1.0), texture(TEXTURE_2, COLOR.xy).rgb * 2.0, COLOR.z), COLOR.a);
 #endif
 
-	float t = fogtime(FOG_COLOR);
 	campos = vec3(0.0, EARTH_R + ELEVATION, 0.0);
 	clocampos = vec3(0.0, EARTH_R + ELEVATION + CLOUD_Y, 0.0);
 
+#if TRY_MCPE_NETEASE
+	setsunlig(SUN_DIR, campos, orisunlig, grosunlig, L);
+#else
+	float t = fogtime(FOG_COLOR);
 	setsunlig(t, campos, orisunlig, grosunlig, L);
+#endif
+
 	setfog(outsca, insca, getearpos(campos, worpos), campos, orisunlig, L, uv1);
 	envlig = getenvlig(uv1, grosunlig, orisunlig, campos, L, varcol.a);
 
 	closunlig = getsunlig(clocampos, orisunlig, L);
-	closkylum = physicsky(vec3(0.0), clocampos, vec3(0.0, 0.8, 0.6), orisunlig, L, 0.0);
+	closkylum = physicsky(vec3(0.0), clocampos, vec3(0.0, 0.8, 0.6), orisunlig, L);
 
 #if !defined(FOG) && 0
 	varcol.rgb += FOG_COLOR.rgb * 0.000001;

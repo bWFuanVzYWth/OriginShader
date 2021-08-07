@@ -59,6 +59,28 @@ float veccos(vec3 v1, vec3 v2)
 	return dot(v1, v2) * inversesqrt(dot(v1, v1) * dot(v2, v2));
 }
 
+//The maximum error is below 1.5 × 10-7
+float erf(float x)
+{
+	// constants
+	const float a1 = 0.254829592;
+	const float a2 = -0.284496736;
+	const float a3 = 1.421413741;
+	const float a4 = -1.453152027;
+	const float a5 = 1.061405429;
+	const float p = 0.3275911;
+
+	// Save the sign of x
+	float sign = x > 0.0 ? 1.0 : -1.0;
+	x = abs(x);
+
+	// A&S formula 7.1.26
+	float t = 1.0 / (1.0 + p * x);
+	float y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * exp(-x * x);
+
+	return sign * y;
+}
+
 mat3 inverse_mat3(mat3 m)
 {
 	float Determinant =
@@ -303,10 +325,10 @@ float hash21(vec2 p)
 	vec4 v = (1.0 / 65536.0) * p.xyxy + vec4(0.1, 0.2, 0.3, 0.4);
 #endif
 
-	v = fract(v.yzwx * C + v.xyzw);
-	v = fract(v.yzwx * C + v.xyzw);
-	v = fract(v.yzwx * C + v.xyzw);
-	v = fract(v.yzwx * C + v.xyzw);
+	v.xyzw = fract(v.yzwx * C + v.xyzw);
+	v.xyz = fract(v.yzw * C + v.xyz);
+	v.xy = fract(v.yz * C + v.xy);
+	v.x = fract(v.y * C + v.x);
 
 	return v.x;
 }
@@ -321,10 +343,10 @@ vec2 hash22(vec2 p)
 	vec4 v = (1.0 / 65536.0) * p.xyxy + vec4(0.1, 0.2, 0.3, 0.4);
 #endif
 
-	v = fract(v.yzwx * C + v.xyzw);
-	v = fract(v.yzwx * C + v.xyzw);
-	v = fract(v.yzwx * C + v.xyzw);
-	v = fract(v.yzwx * C + v.xyzw);
+	v.xyzw = fract(v.yzwx * C + v.xyzw);
+	v.xyzw = fract(v.yzwx * C + v.xyzw);
+	v.xyz = fract(v.yzw * C + v.xyz);
+	v.xy = fract(v.yz * C + v.xy);
 
 	return v.xy;
 }
@@ -339,10 +361,10 @@ float hash31(vec3 p)
 	vec4 v = (1.0 / 65536.0) * p.xyzx + vec4(0.1, 0.2, 0.3, 0.4);
 #endif
 
-	v = fract(v.yzwx * C + v.xyzw);
-	v = fract(v.yzwx * C + v.xyzw);
-	v = fract(v.yzwx * C + v.xyzw);
-	v = fract(v.yzwx * C + v.xyzw);
+	v.xyzw = fract(v.yzwx * C + v.xyzw);
+	v.xyz = fract(v.yzw * C + v.xyz);
+	v.xy = fract(v.yz * C + v.xy);
+	v.x = fract(v.y * C + v.x);
 
 	return v.x;
 }
@@ -357,10 +379,10 @@ vec2 hash32(vec3 p)
 	vec4 v = (1.0 / 65536.0) * p.xyzx + vec4(0.1, 0.2, 0.3, 0.4);
 #endif
 
-	v = fract(v.yzwx * C + v.xyzw);
-	v = fract(v.yzwx * C + v.xyzw);
-	v = fract(v.yzwx * C + v.xyzw);
-	v = fract(v.yzwx * C + v.xyzw);
+	v.xyzw = fract(v.yzwx * C + v.xyzw);
+	v.xyzw = fract(v.yzwx * C + v.xyzw);
+	v.xyz = fract(v.yzw * C + v.xyz);
+	v.xy = fract(v.yz * C + v.xy);
 
 	return v.xy;
 }
@@ -591,10 +613,8 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float r2, float PoL, vec2 adm)
 {
 	vec2 adssum = vec2(0.0);
 
-	vec3 maxpos = sampos + max(PoL, 0.0) * sunvec;
-
 	//仅用到瑞利散射
-	float mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
+	float mpx = exp(length(sampos + max(PoL, 0.0) * sunvec) * (1.0 / -HR) + (EARTH_R / HR));
 
 	float em = mpx - adm.x;
 	float dp = (-2.0 * mpx + adm.x) * (0.99999 / SAMNUM); //1.0 -> 0.99999
@@ -623,13 +643,10 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float r2, float PoL, vec2 adm)
 	return adssum * 0.5;
 }
 
-vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunvec, float thr)
+vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunvec)
 {
 	const float R2 = EARTH_R * EARTH_R;
 	const float R2_9999 = (EARTH_R * 0.9999) * (EARTH_R * 0.9999);
-
-	float marnum = pow(abs(marvec.y + sqrt(1.0 - pow2(EARTH_R / marpos.y))) + 0.0001, -0.5) * MARNUM;
-	marnum = clamp(fract(marnum) > thr ? ceil(marnum) : floor(marnum), 2.0, 64.0);
 
 	float r2 = dot(marpos, marpos);
 	float PoV = dot(marpos, -marvec);
@@ -648,7 +665,9 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 	vec3 expodm0;
 	vec3 expodm1 = vec3(0.0);
 
-	if(nohitraybal(R2, r2, PoL))
+#if PLANET_ATMOSPHERE
+	if (nohitraybal(R2, r2, PoL))
+#endif
 	{
 		//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
 		vec2 adorigin = atmads(marpos, sunvec, r2, PoL, t1.xy);
@@ -671,7 +690,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 		vec3 maxpos = marpos + max(PoV, 0.0) * marvec;
 		mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
 		em = mpx - t1.x;
-		dp = (-2.0 * mpx + t1.x) * (0.99999 / marnum); //1.0 -> 0.99999
+		dp = (-2.0 * mpx + t1.x) * (0.99999 / MARNUM); //1.0 -> 0.99999
 	}
 	else
 	{
@@ -680,10 +699,10 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 		vec3 maxpos = marpos + ((r2R2 ? -q : q) + PoV) * marvec;
 		mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
 		em = mpx - t1.x;
-		dp = -em * (0.99999 / marnum); //1.0 -> 0.99999
+		dp = -em * (0.99999 / MARNUM); //1.0 -> 0.99999
 	}
 
-	for (float j = 1.0; j <= marnum; j++)
+	for (float j = 1.0; j <= MARNUM; j++)
 	{
 		float p = -abs(em + dp * j) + mpx;
 		float h = log(p) * -HR;
@@ -698,12 +717,14 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 
 		marpos += l * marvec;
 
-		admsum += (t0.xy + t1.xy) * 0.5 * l; //不能延迟常量计算
+		admsum += (t0.xy + t1.xy) * 0.5 * l;
 
 		PoL = dot(marpos, -sunvec);
 
+#if PLANET_ATMOSPHERE
 		//如果直接用EARTH_R会有奇怪的条纹
 		if (nohitraybal(R2_9999, r2, PoL))
+#endif
 		{
 			vec2 adssum = atmads(marpos, sunvec, r2, PoL, t1.xy);
 
@@ -731,10 +752,10 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 	vec3 insca = orisunlig * (pr * LR * marsumr + pm * LM * marsumm);
 	vec3 outsca = nohitflag ? skylig * exp((-RO) * admsum.x + (-LM) * admsum.y) : vec3(0.0);
 
-	return outsca + insca;
+	return max(vec3(0.0), outsca + insca);
 }
 
-void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunvec, const float marnum, vec3 pm3, vec3 g3)
+void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunvec, vec3 pm3, vec3 g3)
 {
 	const float R2 = EARTH_R * EARTH_R;
 	const float R2_9999 = (EARTH_R * 0.9999) * (EARTH_R * 0.9999);
@@ -758,19 +779,16 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 	vec3 expodm0;
 	vec3 expodm1 = vec3(0.0);
 
-	if(nohitraybal(R2, r2, PoL))
-	{
-		//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
-		vec2 adorigin = atmads(marpos, sunvec, r2, PoL, adm1);
-		vec3 expodorigin = exp((-RO) * adorigin.x + (-LM) * adorigin.y);
+	//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
+	vec2 adorigin = atmads(marpos, sunvec, r2, PoL, adm1);
+	vec3 expodorigin = exp((-RO) * adorigin.x + (-LM) * adorigin.y);
 
-		expodr1 = expodorigin * adm1.x;
-		expodm1 = expodorigin * adm1.y;
-	}
+	expodr1 = expodorigin * adm1.x;
+	expodm1 = expodorigin * adm1.y;
 
-	float l = length(delpos) * (1.0 / marnum);
+	float l = length(delpos) * (1.0 / MARNUM);
 
-	for (float j = 1.0; j <= marnum; j++)
+	for (float j = 1.0; j <= MARNUM; j++)
 	{
 		marpos += l * marvec;
 
@@ -781,23 +799,19 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 		adm1 = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
 		admsum += (adm0 + adm1) * 0.5 * l; //不能延迟常量计算
 
-		//如果直接用EARTH_R会有奇怪的条纹
-		if (nohitraybal(R2_9999, r2, PoL))
-		{
-			vec2 adssum = atmads(marpos, sunvec, r2, PoL, adm1);
+		vec2 adssum = atmads(marpos, sunvec, r2, PoL, adm1);
 
-			vec2 ad = adssum + admsum;
-			vec3 od = RO * ad.x + LM * ad.y;
-			vec3 expod = exp(-od);
+		vec2 ad = adssum + admsum;
+		vec3 od = RO * ad.x + LM * ad.y;
+		vec3 expod = exp(-od);
 
-			expodr0 = expodr1;
-			expodr1 = expod * adm1.x;
-			marsumr += (expodr0 + expodr1) * l;
+		expodr0 = expodr1;
+		expodr1 = expod * adm1.x;
+		marsumr += (expodr0 + expodr1) * l;
 
-			expodm0 = expodm1;
-			expodm1 = expod * adm1.y;
-			marsumm += (expodm0 + expodm1) * l;
-		}
+		expodm0 = expodm1;
+		expodm1 = expod * adm1.y;
+		marsumm += (expodm0 + expodm1) * l;
 	}
 
 	//延迟常量计算
@@ -808,8 +822,8 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 	float pr = getpr(c);
 	float pm = getpm3(c, pm3, g3);
 
-	insca = (pr * LR * marsumr + pm * LM * marsumm);
-	outsca = exp((-(LR /*+ O3*/)) * admsum.x + (-LM) * admsum.y); //雾在近地表不考虑臭氧吸收
+	insca = max(vec3(0.0), pr * LR * marsumr + pm * LM * marsumm);
+	outsca = max(vec3(0.0), exp((-(LR /*+ O3*/)) * admsum.x + (-LM) * admsum.y)); //雾在近地表不考虑臭氧吸收
 }
 
 vec3 getsunlig(vec3 marpos, vec3 orisunlig, vec3 sunvec)
@@ -819,14 +833,10 @@ vec3 getsunlig(vec3 marpos, vec3 orisunlig, vec3 sunvec)
 	float r2 = dot(marpos, marpos);
 	float PoL = dot(marpos, -sunvec);
 
-	if (nohitraybal(R2_9999, r2, PoL))
-	{
-		vec2 adm = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
-		vec2 adorigin = atmads(marpos, sunvec, r2, PoL, adm);
-		return orisunlig * exp((-RO) * adorigin.x + (-LM) * adorigin.y);
-	}
-	else
-		return vec3(0.0);
+	//不考虑地球遮挡
+	vec2 adm = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
+	vec2 adorigin = atmads(marpos, sunvec, r2, PoL, adm);
+	return max(vec3(0.0), orisunlig * exp((-RO) * adorigin.x + (-LM) * adorigin.y));
 }
 
 vec3 physicsun(vec3 skylig, vec3 orisunlig, vec3 sunvec, vec3 skyvec, const float r)
@@ -853,17 +863,20 @@ vec3 physicsun(vec3 skylig, vec3 orisunlig, vec3 sunvec, vec3 skyvec, const floa
 	}
 }
 
+//cloud
+
+#define CLOSIZ vec3(CLOUD_W, CLOUD_H, CLOUD_W)
+
 bool iscloud(vec3 p0)
 {
-	const float C = 0.7;
 	vec3 p1 = floor(p0 * (1.0 / 3.0));
-	return (hash21(p1.xz) > C) && (hash21(p0.xz) > C);
+	return (hash21(p1.xz) > CLOUD_COVERAGE) && (hash21(p0.xz) > CLOUD_COVERAGE);
 }
 
-float closamsun(vec3 sampos, vec3 aabbsam, vec3 sunvec, const float closamnum, const vec3 CLOSIZ)
+float closamsun(vec3 sampos, vec3 aabbsam, vec3 sunvec)
 {
 	float samsum = 0.0;
-	for (float k = 0.0; k < closamnum && sampos.y > CLOUD_Y && sampos.y < (CLOUD_Y + CLOUD_H); k++)
+	for (float k = 0.0; k < CLOSAMNUM && aabbsam.y == CLOUD_Y; k++)
 	{
 		vec4 intsun = maraabb(sampos, sunvec, aabbsam, aabbsam + CLOSIZ);
 		samsum += iscloud(aabbsam) ? intsun.w : 0.0;
@@ -875,15 +888,13 @@ float closamsun(vec3 sampos, vec3 aabbsam, vec3 sunvec, const float closamnum, c
 
 vec3 cloudrender_fast(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec, vec3 skylum, float gametime)
 {
-	const vec3 CLOSIZ = vec3(CLOUD_W, CLOUD_H, CLOUD_W);
-
 	vec3 marpos = campos;
 	marpos.xz += gametime * CLOUD_SPEED;
-	vec3 aabbmar = floor(marpos / CLOSIZ) * CLOSIZ;
+	vec3 aabbmar = floor(marpos * (1.0 / CLOSIZ)) * CLOSIZ;
 
 	float marsum = 0.0;
 
-	for (float i = 0.0; i < 8.0 && marpos.y > CLOUD_Y && marpos.y < (CLOUD_Y + CLOUD_H); i++)
+	for (float i = 0.0; i < 8.0 && aabbmar.y == CLOUD_Y; i++)
 	{
 		vec4 intclo = maraabb(marpos, marvec, aabbmar, aabbmar + CLOSIZ);
 		if (iscloud(aabbmar))
@@ -895,48 +906,44 @@ vec3 cloudrender_fast(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 s
 	return skylig + (1.0 / (4.0 * MATH_PI)) * marsum * sunlig;
 }
 
-vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec, vec3 skylum, float gametime, float thr)
+vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec, vec3 skylum, float gametime)
 {
-	const vec3 CLOSIZ = vec3(CLOUD_W, CLOUD_H, CLOUD_W);
-
 	vec3 marpos = campos;
 	marpos.xz += gametime * CLOUD_SPEED;
-	vec3 aabbmar = floor(marpos / CLOSIZ) * CLOSIZ;
+	vec3 aabbmar = floor(marpos * (1.0 / CLOSIZ)) * CLOSIZ;
 
 	float marsum = 0.0;
 	float expsum = 0.0;
 
-	for (float i = 0.0; i < CLOINTNUM && marpos.y > CLOUD_Y && marpos.y < (CLOUD_Y + CLOUD_H); i++)
+	for (float i = 0.0; i < CLOINTNUM && aabbmar.y == CLOUD_Y; i++)
 	{
 		vec4 intclo = maraabb(marpos, marvec, aabbmar, aabbmar + CLOSIZ);
 
 		if (iscloud(aabbmar))
 		{
-			float marnum = intclo.w * (CLOMARNUM / CLOUD_H);
-			marnum = clamp(fract(marnum) > thr ? ceil(marnum) : floor(marnum), 2.0, 64.0);
-
-			float l = intclo.w / marnum;
+			float l = intclo.w * (1.0 / CLOMARNUM);
 			vec3 marstep = l * marvec;
 
-			vec3 t_marpos = marpos;
+			vec3 sampos = marpos;
 
 			float samsun0;
-			float samsun1 = closamsun(t_marpos, aabbmar, sunvec, CLOSAMNUM, CLOSIZ);
+			float samsun1 = closamsun(sampos, aabbmar, sunvec);
 
 			float exp0;
 			float exp1 = exp(-CLOUD_LM * (marsum + samsun1));
 
 			float s = 0.0;
 
-			for (float j = 0.0; j < marnum; j++)
+			for (float j = 0.0; j < CLOMARNUM; j++)
 			{
-				t_marpos += marstep;
+				sampos += marstep;
 
 				samsun0 = samsun1;
-				samsun1 = closamsun(t_marpos, aabbmar, sunvec, CLOSAMNUM, CLOSIZ);
+				samsun1 = closamsun(sampos, aabbmar, sunvec);
 
 				//[linlin. 均匀介质散射中能量守恒的梯形积分]
-				//((-E^(L*(Sa + d)) + E^(L*(l + Sb + d)))*l)/(E^(L*(l + Sa + Sb + 2*d))*(L*(l - Sa + Sb)))
+				//(  (  E^(L*(l+Sb+d)) - E^(L*(Sa+d))  )  * l  ) /	(  L *  E^(L*(l+Sb+d + Sa+d))  *  (l-Sa+Sb)  )
+				
 				float t_a = samsun1 + l;
 				exp0 = exp1;
 				exp1 = exp(-CLOUD_LM * (marsum + t_a));
@@ -945,7 +952,7 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
 				marsum += l;
 			}
 			//延迟常量计算
-			expsum += s * l / CLOUD_LM;
+			expsum += s * l * (1.0 / CLOUD_LM);
 		}
 
 		marpos += intclo.w * marvec;
@@ -1049,16 +1056,21 @@ vec3 getmetalF0(int c)
 }
 
 //origin shader light system
-void setsunlig(bool issun, vec4 world1, vec3 campos, out vec3 orisunlig, out vec3 sunlig, out vec3 sunvec)
+#define SUNLIG (gamma2line(SUNCOL) * SUNLIGHT_A)
+#define MOOLIG (gamma2line(MOOCOL) * MOOLIGHT_A)
+#define POILIG (gamma2line(POICOL) * POILIGHT_A)
+#define ENVLIG (gamma2line(ENVCOL) * ENVLIGHT_A)
+
+void setsunlig(const vec4 SUN_DIR, vec3 campos, out vec3 orisunlig, out vec3 sunlig, out vec3 sunvec)
 {
 	const mat2 M = mat2(
 		cos(SUNDEC), sin(SUNDEC),
 		-sin(SUNDEC), cos(SUNDEC));
-	if (issun)
-		orisunlig = gamma2line(SUNCOL) * SUNLIGHT_A;
-	else
-		orisunlig = gamma2line(MOOCOL) * MOOLIGHT_A;
-	sunvec = normalize(world1.xyz);
+
+	sunvec = SUN_DIR.w > 0.5 ? SUN_DIR.xyz : -SUN_DIR.xyz;
+	bool day = sunvec.y > SUN_RISE_Y;
+	sunvec = day ? sunvec : -sunvec;
+	orisunlig = day ? SUNLIG : MOOLIG;
 	sunvec.xz = M * sunvec.xz;
 	sunlig = getsunlig(campos, orisunlig, sunvec);
 }
@@ -1068,31 +1080,24 @@ void setsunlig(float t, vec3 campos, out vec3 orisunlig, out vec3 sunlig, out ve
 	const mat2 M = mat2(
 		cos(SUNDEC), sin(SUNDEC),
 		-sin(SUNDEC), cos(SUNDEC));
-	if (t > -0.02)
-	{
-		sunvec = vec3(cos(t), sin(t), 0.0);
-		orisunlig = gamma2line(SUNCOL) * SUNLIGHT_A;
-	}
-	else
-	{
-		sunvec = -vec3(cos(t), sin(t), 0.0);
-		orisunlig = gamma2line(MOOCOL) * MOOLIGHT_A;
-	}
+
+	sunvec = vec3(cos(t), sin(t), 0.0);
+	bool day = sunvec.y > SUN_RISE_Y;
+	sunvec = day ? sunvec : -sunvec;
+	orisunlig = day ? SUNLIG : MOOLIG;
 	sunvec.xz = M * sunvec.xz;
 	sunlig = getsunlig(campos, orisunlig, sunvec);
 }
 
 vec3 getenvlig(vec2 uv1, vec3 sunlig, vec3 orisunlig, vec3 marpos, vec3 sunvec, float ao)
 {
-	vec3 skylum = physicsky(vec3(0.0), marpos, vec3(0.0, 0.8, 0.6), orisunlig, sunvec, 0.0);
+	vec3 skylum = physicsky(vec3(0.0), marpos, vec3(0.0, 0.8, 0.6), orisunlig, sunvec);
 	vec3 blolum = sunlig * Diffuse_Lambert(GRAY) * uv1y2lig(uv1.y);
-	vec3 envlum = gamma2line(ENVCOL) * ENVLIGHT_A;
-	return (envlum + mix(blolum, skylum, uv1y2lig(uv1.y) * 0.6)) * ao;
+	return (ENVLIG + mix(blolum, skylum, uv1y2lig(uv1.y) * 0.6)) * ao;
 }
 
 vec3 getpoilig(vec2 uv1)
 {
-	vec3 POILIG = gamma2line(POICOL) * POILIGHT_A;
 	return POILIG * uv1x2lig(uv1.x);
 }
 
@@ -1103,18 +1108,15 @@ vec3 getearpos(vec3 campos, vec4 worpos)
 
 void setfog(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 orisunlig, vec3 sunvec, vec2 uv1)
 {
-	atmsca(outsca, insca, stapos, marpos, sunvec, MARNUM, PM_FOG, G_FOG);
-	insca *= uv1.y;
+	atmsca(outsca, insca, stapos, marpos, sunvec, PM_FOG, G_FOG);
+	insca *= uv1.y; //修复水面看水下的雾计算错误
 }
 
-vec3 skyfog(vec3 skylig, vec3 stapos, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunvec, float thr)
+vec3 skyfog(vec3 skylig, vec3 stapos, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunvec)
 {
-	float marnum = pow(abs(marvec.y + sqrt(1.0 - pow2(EARTH_R / marpos.y))) + 0.0001, -0.5) * MARNUM;
-	marnum = clamp(fract(marnum) > thr ? ceil(marnum) : floor(marnum), 2.0, 64.0);
-
 	vec3 insca;
 	vec3 outsca;
-	atmsca(outsca, insca, stapos, marpos, sunvec, marnum, PM_AIR, G_AIR);
+	atmsca(outsca, insca, stapos, marpos, sunvec, PM_AIR, G_AIR);
 	return skylig * outsca + orisunlig * insca;
 }
 
@@ -1164,18 +1166,18 @@ vec3 skyrender(vec3 skylig, vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunli
 	skylig = physicsun(skylig, orisunlig, sunvec, skyvec, SUN_R);
 
 #if FAST_CLOUD
-	skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec, thr.r);
+	skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec);
 	skylig = cloudrender_fast(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
 #else
 	if (needrendercloud)
 	{
-		skylig = physicsky(skylig, reaclopos, skyvec, orisunlig, sunvec, thr.r);
-		skylig = cloudrender(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime, thr.g);
-		skylig = skyfog(skylig, reaclopos, campos, skyvec, orisunlig, sunvec, thr.b);
+		skylig = physicsky(skylig, reaclopos, skyvec, orisunlig, sunvec);
+		skylig = cloudrender(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
+		skylig = skyfog(skylig, reaclopos, campos, skyvec, orisunlig, sunvec);
 	}
 	else
 	{
-		skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec, thr.r);
+		skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec);
 	}
 #endif
 

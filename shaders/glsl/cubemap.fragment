@@ -9,7 +9,7 @@ precision highp float;
 flat varying vec3 campos;
 flat varying vec3 clocampos;
 
-flat varying vec3 sunvec;
+flat varying vec3 L;
 flat varying vec3 orisunlig;
 flat varying vec3 closunlig;
 flat varying vec3 closkylum;
@@ -34,7 +34,7 @@ void main()
 
 	vec4 thr = texelFetch(TEXTURE_0, (ivec2(gl_FragCoord.xy) + 2400) % 256, 0);
 
-	skylig = skyrender(skylig, campos, skyvec, orisunlig, closunlig, closkylum, sunvec, thr, TOTAL_REAL_WORLD_TIME);
+	skylig = skyrender(skylig, campos, skyvec, orisunlig, closunlig, closkylum, L, thr, TOTAL_REAL_WORLD_TIME);
 
 	outcol.rgb = lig2col(skylig);
 
