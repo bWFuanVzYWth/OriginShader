@@ -53,11 +53,16 @@
 //太阳偏角
 //Solar declination
 
-#define SUN_R 0.015
+#define SUN_R 0.009512
 //太阳的半径，单位为弧度
 //The radius of the sun, in radians
 
+#define FAST_SOFTSHADOW 1
+//更快的软阴影
 
+
+
+#define FAST_BSDF 1
 
 #define USE_WATER_TEXTURE 0
 //使用原版水面材质
@@ -70,7 +75,7 @@
 #define NORMAL_MAP_FIX 1
 //修复法线宽度不一直的问题
 
-#define NORMAL_MAP_STRENGTH 1.0
+#define NORMAL_MAP_STRENGTH 1.5
 //法线映射强度
 
 #define NORMAL_MAP_W 1.5
@@ -83,6 +88,8 @@
 #define ROUGHNESS 1.0
 //材质默认粗糙度
 //Default roughness
+
+#define ROUGHNESS_0 0.05
 
 
 
@@ -97,7 +104,7 @@
 
 
 
-#define FOG_A 16.0
+#define FOG_A 24.0
 //能见度，数值越大雾越淡
 
 
@@ -171,6 +178,11 @@
 
 
 
+#define WATER_TYPE 1
+//1 静水
+//2 小波浪
+
+
 
 
 
@@ -190,13 +202,21 @@
 
 
 
+//开发者选项
+#define WHITEWORLD 0
+
+
+
+#define SKYLINE 0.02
+
+//效果选项
 #define PM_AIR vec3(0.10, 0.80, 0.10)
-#define G_AIR vec3(-0.15, 0.75, 0.95)
+#define G_AIR vec3(-0.15, 0.75, 0.99)
 
-#define PM_FOG vec3(0.10, 0.80, 0.10)
+#define PM_FOG vec3(0.20, 0.50, 0.30)
 #define G_FOG vec3(-0.15, 0.15, 0.75)
 
-#define PM_CLOUD vec3(0.10, 0.80, 0.10)
+#define PM_CLOUD vec3(0.10, 0.70, 0.20)
 #define G_CLOUD vec3(-0.15, 0.15, 0.95)
 //乱七八糟的相位函数参数，自己看着调吧我放弃解释了
 
@@ -235,6 +255,16 @@
 
 #define TRY_MCPE_NETEASE 0
 //尝试使用仅能在网易版使用的精确时间模式
+
+
+
+#if NORMAL_MAP_FIX
+#define TEXSIZW 16384.0
+#define TEXSIZH 8192.0
+#else
+#define TEXSIZW 8192.0
+#define TEXSIZH 8192.0
+#endif
 
 
 

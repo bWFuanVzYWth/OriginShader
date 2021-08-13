@@ -34,6 +34,7 @@ void main()
 
 	vec4 thr = texelFetch(TEXTURE_0, (ivec2(gl_FragCoord.xy) + 2400) % 256, 0);
 
+	skylig = physicsun(skylig, orisunlig, L, skyvec, SUN_R);
 	skylig = skyrender(skylig, campos, skyvec, orisunlig, closunlig, closkylum, L, thr, TOTAL_REAL_WORLD_TIME);
 
 	outcol.rgb = lig2col(skylig);
