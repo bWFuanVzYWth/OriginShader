@@ -1,5 +1,5 @@
 #version 300 es
-#pragma optimize(on)
+
 precision highp float;
 
 #include "fragmentVersionCentroid.h"

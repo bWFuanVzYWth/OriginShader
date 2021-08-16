@@ -7,12 +7,6 @@
 //0 关闭太空模式
 //0 Space Mode Off
 
-#define FAST_CLOUD 0
-//1 低质量但是更快速的云
-//1 Low quality but faster clouds
-//0 高质量但是更卡顿的云
-//0 High quality but lagger clouds
-
 
 
 #define SUNCOL vec3(1.0000, 1.0000, 1.0000)
@@ -63,8 +57,9 @@
 
 
 #define FAST_BSDF 1
+//使用更快但效果略差的BRDF
 
-#define USE_WATER_TEXTURE 0
+#define USE_WATER_TEXTURE 1
 //使用原版水面材质
 //Use vanilla water surface material
 
@@ -75,7 +70,7 @@
 #define NORMAL_MAP_FIX 1
 //修复法线宽度不一直的问题
 
-#define NORMAL_MAP_STRENGTH 1.5
+#define NORMAL_MAP_STRENGTH 1.0
 //法线映射强度
 
 #define NORMAL_MAP_W 1.5
@@ -90,6 +85,12 @@
 //Default roughness
 
 #define ROUGHNESS_0 0.05
+//光滑表面反射阳光的粗糙度
+
+
+
+#define HARDCODE_MATEL 0.8
+//金属的F0在材质颜色和pbr硬编码颜色间插值
 
 
 
@@ -114,11 +115,11 @@
 //太空模式默认海拔，用于大气层建模，单位为km
 //The default altitude of space mode is used for atmosphere modeling, in km
 
-#define SAMNUM 3.0
+#define SAMNUM 4.0
 //太空模式中阳光方向的采样数
 //Sampling number of sunlight direction in space mode
 
-#define MARNUM 6.0
+#define MARNUM 8.0
 //太空模式中视线方向的基础采样数
 //将由程序在设置的基础上自动调整
 //The number of basic samples in line of sight direction in space mode.
@@ -149,7 +150,7 @@
 #define LR (0.005 * vec3(0.580, 1.350, 3.310))
 //瑞利散射强度
 //Rayleigh scattering
-#define LM (0.005 * vec3(2.000, 2.000, 2.000))
+#define LM (0.015 * vec3(2.000, 2.000, 2.000))
 //米散射强度
 //Mie scattering
 
@@ -178,11 +179,14 @@
 
 
 
-#define WATER_TYPE 1
+#define WATER_TYPE 2
 //1 静水
 //2 小波浪
 
-
+#define CLOUD_TYPE 3
+//1 无云
+//2 方块云(快速)
+//3 方块云(质量)
 
 
 
@@ -204,10 +208,9 @@
 
 //开发者选项
 #define WHITEWORLD 0
+//整个世界变成纯白，用于观察光照
 
 
-
-#define SKYLINE 0.02
 
 //效果选项
 #define PM_AIR vec3(0.10, 0.80, 0.10)
@@ -239,7 +242,11 @@
 //米散射放缩高度，单位为km
 
 #define EARTH_R 6371.0
-//地球半径，用于大气层建模，单位为km
+//地球海平面所在半径，用于大气层建模，单位为km
+
+#define EARTH_r (EARTH_R - 0.5)
+//地球实际地面的半径，用于大气层建模，单位为km
+//应比海平面所在半径略小，并调整到天际线分割尽量不明显
 
 #define SUN_RISE_Y -0.04
 //昼夜切换时的太阳高度，应调整至日月过渡尽量平滑

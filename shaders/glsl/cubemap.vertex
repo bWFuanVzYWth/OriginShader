@@ -1,5 +1,5 @@
 #version 300 es
-#pragma optimize(on)
+
 precision highp float;
 
 #include "vertexVersionCentroidUV.h"
@@ -40,7 +40,7 @@ void main()
 	setsunlig(t, clocampos, orisunlig, closunlig, L);
 #endif
 
-	closkylum = physicsky(vec3(0.0), clocampos, vec3(0.0, 0.8, 0.6), orisunlig, closunlig, L);
+	closkylum = physicsky(vec3(0.0), clocampos, vec3(0.0, 0.8, 0.6), orisunlig, L);
 
     skypos = WORLD * POSITION;
     gl_Position = WORLDVIEWPROJ * POSITION;

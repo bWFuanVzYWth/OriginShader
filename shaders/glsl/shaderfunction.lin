@@ -650,7 +650,7 @@ float Vis_Implicit()
 
 float Vis_Smith(float Roughness, float NoV, float NoL)
 {
-	float a = pow2(Roughness);
+	float a = Roughness * Roughness;
 	float a2 = a * a;
 
 	float Vis_SmithV = NoV + sqrt(NoV * (NoV - NoV * a2) + a2);
@@ -688,37 +688,63 @@ vec3 scattering_BSDF(vec3 BaseColor)
 	return (1.0 / (4.0 * MATH_PI)) * BaseColor;
 }
 
-vec3 getBSDF(vec3 BaseColor, vec3 SpecularColor, float Roughness, float NoV, float NoL, float NoH, float VoH, float VoL)
+vec3 getBRDF(vec3 BaseColor, vec3 SpecularColor, float Roughness, float NoV, float NoL, float NoH, float VoH, float VoL)
 {
 #if FAST_BSDF
-	vec3 diffuseBRDF = Diffuse_Lambert(BaseColor);
-	vec3 specularBRDF = D_GGX(Roughness, NoH) * Vis_Implicit() * F_Schlick(SpecularColor, VoH);
+	//vec3 diffuseBRDF = Diffuse_Lambert(BaseColor);
+	//vec3 specularBRDF = D_GGX(Roughness, NoH) * Vis_Implicit() * F_Schlick(SpecularColor, VoH);
+	float r2 = Roughness * Roughness;
+	float r4 = r2 * r2;
+
+	vec3 diffuseBRDF = (1.0 / MATH_PI) * BaseColor;
+
+	float d = (NoH * r4 - NoH) * NoH + 1.0;
+	float D = r4 / (MATH_PI * d * d);
+
+	const float Vis = 0.25;
+
+	float Fc = pow5(1.0 - VoH);
+	vec3 F = saturate(50.0 * SpecularColor.g) * Fc + (1.0 - Fc) * SpecularColor;
+
+	vec3 specularBRDF = D * Vis * F;
+
 	return diffuseBRDF + specularBRDF;
+
 #else
-	vec3 diffuseBRDF = Diffuse_Gotanda(BaseColor, Roughness, NoV, NoL, VoH, VoL);
-	vec3 specularBRDF = D_GGX(Roughness, NoH) * Vis_Smith(Roughness, NoV, NoL) * F_Fresnel(SpecularColor, VoH);
-	return diffuseBRDF + specularBRDF;
-#endif
-}
+	//vec3 diffuseBRDF = Diffuse_Gotanda(BaseColor, Roughness, NoV, NoL, VoH, VoL);
+	//vec3 specularBRDF = D_GGX(Roughness, NoH) * Vis_Smith(Roughness, NoV, NoL) * F_Fresnel(SpecularColor, VoH);
+	float r2 = Roughness * Roughness;
+	float r4 = r2 * r2;
 
-vec3 getBSDF(vec3 BaseColor, vec3 SpecularColor, float Roughness, vec3 N, vec3 V, vec3 L)
-{
-	vec3 H = normalize(V + L);
+	const float F0_Gotanda = 0.04;
 
-	float NoV = max(0.0, dot(N, V));
-	float NoL = max(0.0, dot(N, L));
-	float NoH = max(0.0, dot(N, H));
-	float VoH = max(0.0, dot(V, H));
-	float VoL = max(0.0, dot(V, L));
+	float NoV_NoL = NoV * NoL;
+	float Cosri = VoL - NoV_NoL;
+	float r4_13 = r4 + 1.36053;
+	float Fr = (1.0 - (0.542026 * r4 + 0.303573 * r2) / r4_13) * (1.0 - pow(1.0 - NoV, 5.0 - 4.0 * r4) / r4_13) * ((-0.733996 * r4 * r2 + 1.50912 * r4 - 1.16402 * r2) * pow(1.0 - NoV, 1.0 + 1.0 / (39.0 * r4 * r4 + 1.0)) + 1.0);
+	float Lm = (max(1.0 - 2.0 * r2, 0.0) * (1.0 - pow5(1.0 - NoL)) + min(2.0 * r2, 1.0)) * (1.0 - 0.5 * r2 * (NoL - 1.0)) * NoL;
+	float Vd = (r4 / ((r4 + 0.09) * (1.31072 + 0.995584 * NoV))) * (1.0 - pow(1.0 - NoL, (1.0 - 0.3726732 * NoV * NoV) / (0.188566 + 0.38841 * NoV)));
+	float Bp = Cosri < 0.0 ? 1.4 * NoV_NoL * Cosri : Cosri;
+	float Lr = (21.0 / 20.0) * (1.0 - F0_Gotanda) * (Fr * Lm + Vd + Bp);
 
-#if FAST_BSDF
-	vec3 diffuseBRDF = Diffuse_Lambert(BaseColor);
-	vec3 specularBRDF = D_GGX(Roughness, NoH) * Vis_Implicit() * F_Schlick(SpecularColor, VoH);
+	vec3 diffuseBRDF = BaseColor * (1.0 / MATH_PI) * Lr;
+
+	float d = (NoH * r4 - NoH) * NoH + 1.0;
+	float D = r4 / (MATH_PI * d * d);
+
+	float Vis_SmithV = NoV + sqrt(NoV * (NoV - NoV * r4) + r4);
+	float Vis_SmithL = NoL + sqrt(NoL * (NoL - NoL * r4) + r4);
+	float Vis = 1.0 / (Vis_SmithV * Vis_SmithL);
+
+	vec3 SpecularColorSqrt = sqrt(clamp(SpecularColor, vec3(0.0), vec3(0.99)));
+	vec3 n = (1.0 + SpecularColorSqrt) / (1.0 - SpecularColorSqrt);
+	vec3 g = sqrt(n * n + VoH * VoH - 1.0);
+	vec3 F = 0.5 * pow2((g - VoH) / (g + VoH)) * (1.0 + pow2(((g + VoH) * VoH - 1.0) / ((g - VoH) * VoH + 1.0)));
+
+	vec3 specularBRDF = D * Vis * F;
+
 	return diffuseBRDF + specularBRDF;
-#else
-	vec3 diffuseBRDF = Diffuse_Gotanda(BaseColor, Roughness, NoV, NoL, VoH, VoL);
-	vec3 specularBRDF = D_GGX(Roughness, NoH) * Vis_Smith(Roughness, NoV, NoL) * F_Fresnel(SpecularColor, VoH);
-	return diffuseBRDF + specularBRDF;
+
 #endif
 }
 
@@ -764,28 +790,28 @@ float getpm3(float c, const vec3 pm3, const vec3 g3)
 	return dot(vec3(pm0, pm1, pm2), pm3);
 }
 
-//传递这几个数值仅用于优化，因为往往存在重复计算
-vec2 atmads(vec3 sampos, vec3 sunvec, float r2, float PoL, vec2 adm)
+vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1)
 {
 	vec2 adssum = vec2(0.0);
 
 	//仅用到瑞利散射
 	float mpx = exp(length(sampos + max(PoL, 0.0) * sunvec) * (1.0 / -HR) + (EARTH_R / HR));
 
-	float em = mpx - adm.x;
-	float dp = (-2.0 * mpx + adm.x) * (0.99999 / SAMNUM); //1.0 -> 0.99999
+	float em = mpx - t1.x;
+	float dp = (-2.0 * mpx + t1.x) * (0.99999 / SAMNUM); //1.0 -> 0.99999
 
+	//adm.x adm.y r2
 	vec3 t0;
-	vec3 t1 = vec3(adm, r2);
 
 	for (float j = 1.0; j <= SAMNUM; j++)
 	{
-		float p = mpx - abs(em + dp * j);
-		float h = log(p) * -HR;
-		float r = h + EARTH_R;
-
 		t0 = t1;
-		t1 = vec3(p, exp(h * (1.0 / -HM)), r * r);
+
+		t1.x = mpx - abs(em + dp * j);
+		float h = log(t1.x) * -HR;
+		float r = h + EARTH_R;
+		t1.y = exp(h * (1.0 / -HM));
+		t1.z = r * r;
 
 		PoL = dot(sampos, -sunvec);
 		float l = lenraybal(t1.z, t0.z, PoL);
@@ -799,19 +825,21 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float r2, float PoL, vec2 adm)
 	return adssum * 0.5;
 }
 
-vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunlig, vec3 sunvec)
+vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunvec)
 {
-	const float R2 = EARTH_R * EARTH_R;
-	const float R2_9999 = (EARTH_R * 0.9999) * (EARTH_R * 0.9999);
+	const float R2 = EARTH_r * EARTH_r;
+	const float R2_99995 = (EARTH_r * 0.99995) * (EARTH_r * 0.99995);
 
-	float r2 = dot(marpos, marpos);
 	float PoV = dot(marpos, -marvec);
 	float PoL = dot(marpos, -sunvec);
 
 	vec2 admsum = vec2(0.0);
 
+	//adm.x adm.y r2
 	vec3 t0;
-	vec3 t1 = vec3(exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM))), r2);
+	vec3 t1;
+	t1.z = dot(marpos, marpos);
+	t1.xy = exp(sqrt(t1.z) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
 
 	vec3 marsumr = vec3(0.0);
 	vec3 expodr0;
@@ -822,11 +850,11 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunli
 	vec3 expodm1 = vec3(0.0);
 
 #if PLANET_ATMOSPHERE
-	if (nohitraybal(R2, r2, PoL))
+	if (nohitraybal(R2, t1.z, PoL))
 #endif
 	{
 		//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
-		vec2 adorigin = atmads(marpos, sunvec, r2, PoL, t1.xy);
+		vec2 adorigin = atmads(marpos, sunvec, PoL, t1);
 		vec3 expodorigin = exp((-RO) * adorigin.x + (-LM) * adorigin.y);
 
 		expodr1 = expodorigin * t1.x;
@@ -834,8 +862,8 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunli
 	}
 
 	float t = PoV * PoV + R2;
-	bool r2R2 = r2 > R2;
-	bool nohitflag = ((r2R2 && PoV < 0.0) || t < r2);
+	bool r2R2 = t1.z > R2;
+	bool nohitflag = ((r2R2 && PoV < 0.0) || t < t1.z);
 
 	float mpx;
 	float em;
@@ -850,7 +878,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunli
 	}
 	else
 	{
-		float q = sqrt(t - r2);
+		float q = sqrt(t - t1.z);
 
 		vec3 maxpos = marpos + ((r2R2 ? -q : q) + PoV) * marvec;
 		mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
@@ -860,13 +888,13 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunli
 
 	for (float j = 1.0; j <= MARNUM; j++)
 	{
-		float p = -abs(em + dp * j) + mpx;
-		float h = log(p) * -HR;
-		float r = h + EARTH_R;
-		r2 = r * r;
-
 		t0 = t1;
-		t1 = vec3(p, exp(h * (1.0 / -HM)), r2);
+
+		t1.x = -abs(em + dp * j) + mpx;
+		float h = log(t1.x) * -HR;
+		float r = h + EARTH_R;
+		t1.y = exp(h * (1.0 / -HM));
+		t1.z = r * r;
 
 		PoV = dot(marpos, -marvec);
 		float l = lenraybal(t1.z, t0.z, PoV);
@@ -879,10 +907,10 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunli
 
 #if PLANET_ATMOSPHERE
 		//如果直接用EARTH_R会有奇怪的条纹
-		if (nohitraybal(R2_9999, r2, PoL))
+		if (nohitraybal(R2_99995, t1.z, PoL))
 #endif
 		{
-			vec2 adssum = atmads(marpos, sunvec, r2, PoL, t1.xy);
+			vec2 adssum = atmads(marpos, sunvec, PoL, t1);
 
 			vec2 ad = adssum + admsum;
 			vec3 od = RO * ad.x + LM * ad.y;
@@ -906,8 +934,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunli
 	float pm = getpm3(c, PM_AIR, G_AIR);
 
 	vec3 insca = orisunlig * (pr * LR * marsumr + pm * LM * marsumm);
-	float t_a = saturate(1.0 + (-1.0 / SKYLINE) + (1.0 / SKYLINE) * (marvec.y + marpos.y * (1.0 / EARTH_R)));
-	skylig = mix(orisunlig * max(sunvec.y, 0.0) * Diffuse_Lambert(GRAY), skylig, t_a);
+	skylig = nohitflag ? skylig : vec3(0.0); //地球遮挡
 	vec3 outsca = skylig * exp((-RO) * admsum.x + (-LM) * admsum.y);
 
 	return max(vec3(0.0), outsca + insca);
@@ -915,8 +942,8 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunli
 
 void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunvec, vec3 pm3, vec3 g3)
 {
-	const float R2 = EARTH_R * EARTH_R;
-	const float R2_9999 = (EARTH_R * 0.9999) * (EARTH_R * 0.9999);
+	const float R2 = EARTH_r * EARTH_r;
+	const float R2_99995 = (EARTH_r * 0.99995) * (EARTH_r * 0.99995);
 
 	vec3 delpos = stapos - marpos;
 	vec3 marvec = normalize(delpos);
@@ -938,7 +965,7 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 	vec3 expodm1 = vec3(0.0);
 
 	//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
-	vec2 adorigin = atmads(marpos, sunvec, r2, PoL, adm1);
+	vec2 adorigin = atmads(marpos, sunvec, PoL, vec3(adm1, r2));
 	vec3 expodorigin = exp((-RO) * adorigin.x + (-LM) * adorigin.y);
 
 	expodr1 = expodorigin * adm1.x;
@@ -957,7 +984,7 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 		adm1 = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
 		admsum += (adm0 + adm1) * 0.5 * l; //不能延迟常量计算
 
-		vec2 adssum = atmads(marpos, sunvec, r2, PoL, adm1);
+		vec2 adssum = atmads(marpos, sunvec, PoL, vec3(adm1, r2));
 
 		vec2 ad = adssum + admsum;
 		vec3 od = RO * ad.x + LM * ad.y;
@@ -981,19 +1008,19 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 	float pm = getpm3(c, pm3, g3);
 
 	insca = max(vec3(0.0), pr * LR * marsumr + pm * LM * marsumm);
-	outsca = max(vec3(0.0), exp((-(LR /*+ O3*/)) * admsum.x + (-LM) * admsum.y)); //雾在近地表不考虑臭氧吸收
+	outsca = max(vec3(0.0), exp((-RO) * admsum.x + (-LM) * admsum.y));
 }
 
 vec3 getsunlig(vec3 marpos, vec3 orisunlig, vec3 sunvec)
 {
-	const float R2_9999 = (EARTH_R * 0.9999) * (EARTH_R * 0.9999);
+	const float R2_99995 = (EARTH_r * 0.99995) * (EARTH_r * 0.99995);
 
 	float r2 = dot(marpos, marpos);
 	float PoL = dot(marpos, -sunvec);
 
 	//不考虑地球遮挡
 	vec2 adm = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
-	vec2 adorigin = atmads(marpos, sunvec, r2, PoL, adm);
+	vec2 adorigin = atmads(marpos, sunvec, PoL, vec3(adm, r2));
 	return max(vec3(0.0), orisunlig * exp((-RO) * adorigin.x + (-LM) * adorigin.y));
 }
 
@@ -1084,11 +1111,10 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
 
 			vec3 sampos = marpos;
 
-			float samsun0;
-			float samsun1 = closamsun(sampos, aabbmar, sunvec);
-
-			float exp0;
-			float exp1 = exp(-CLOUD_LM * (marsum + samsun1));
+			vec2 t0;
+			vec2 t1;
+			t1.x = closamsun(sampos, aabbmar, sunvec);
+			t1.y = exp(-CLOUD_LM * (marsum + t1.x));
 
 			float s = 0.0;
 
@@ -1096,16 +1122,12 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
 			{
 				sampos += marstep;
 
-				samsun0 = samsun1;
-				samsun1 = closamsun(sampos, aabbmar, sunvec);
+				t0 = t1;
 
-				//[linlin. 均匀介质散射中能量守恒的梯形积分]
-				//(  (  E^(L*(l+Sb+d)) - E^(L*(Sa+d))  )  * l  ) /	(  L *  E^(L*(l+Sb+d + Sa+d))  *  (l-Sa+Sb)  )
-
-				float t_a = samsun1 + l;
-				exp0 = exp1;
-				exp1 = exp(-CLOUD_LM * (marsum + t_a));
-				s += (exp0 - exp1) / (t_a - samsun0);
+				t1.x = closamsun(sampos, aabbmar, sunvec);
+				float t_a = t1.x + l;
+				t1.y = exp(-CLOUD_LM * (marsum + t_a));
+				s += (t0.y - t1.y) / (t_a - t0.x);
 
 				marsum += l;
 			}
@@ -1160,16 +1182,17 @@ void setsunlig(float t, vec3 campos, out vec3 orisunlig, out vec3 sunlig, out ve
 	sunlig = getsunlig(campos, orisunlig, sunvec);
 }
 
-vec3 getenvlig(vec2 uv1, vec3 sunlig, vec3 orisunlig, vec3 marpos, vec3 sunvec, float ao)
-{
-	vec3 skylum = physicsky(vec3(0.0), marpos, vec3(0.0, 0.8, 0.6), orisunlig, sunlig, sunvec);
-	vec3 blolum = sunlig * Diffuse_Lambert(GRAY) * uv1y2lig(uv1.y);
-	return (ENVLIG + mix(blolum, skylum, uv1y2lig(uv1.y) * 0.6)) * ao;
-}
-
 vec3 getpoilig(vec2 uv1)
 {
 	return POILIG * uv1x2lig(uv1.x);
+}
+
+vec3 getenvlig(vec2 uv1, vec3 sunlig, vec3 orisunlig, vec3 marpos, vec3 sunvec, float ao)
+{
+	vec3 skylum = physicsky(vec3(0.0), marpos, vec3(0.0, 0.8, 0.6), orisunlig, sunvec);
+	vec3 blolum = sunlig * Diffuse_Lambert(GRAY) * uv1y2lig(uv1.y);
+	vec3 poilum = getpoilig(uv1) * Diffuse_Lambert(GRAY);
+	return (ENVLIG + poilum + mix(blolum, skylum, uv1y2lig(uv1.y) * 0.6)) * ao;
 }
 
 vec3 getearpos(vec3 campos, vec4 worpos)
@@ -1179,7 +1202,7 @@ vec3 getearpos(vec3 campos, vec4 worpos)
 
 void setfog(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 orisunlig, vec3 sunvec, vec2 uv1)
 {
-	atmsca(outsca, insca, stapos, marpos, sunvec, PM_FOG, G_FOG);
+	atmsca(outsca, insca, stapos, marpos, sunvec, PM_AIR, G_AIR);
 	insca *= uv1.y; //修复水面看水下的雾计算错误
 }
 
@@ -1193,10 +1216,13 @@ vec3 skyfog(vec3 skylig, vec3 stapos, vec3 marpos, vec3 marvec, vec3 orisunlig, 
 
 vec3 skyrender(vec3 skylig, vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunlig, vec3 skylum, vec3 sunvec, vec4 thr, float gametime)
 {
-	const float R2 = EARTH_R * EARTH_R;
+	const float R2 = EARTH_r * EARTH_r;
 	const float R2_Y = (EARTH_R + CLOUD_Y) * (EARTH_R + CLOUD_Y);
 	const float R2_YH = (EARTH_R + CLOUD_Y + CLOUD_H) * (EARTH_R + CLOUD_Y + CLOUD_H);
 
+#if CLOUD_TYPE == 1 //none
+	skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec);
+#else
 	bool needrendercloud = true;
 	vec3 reaclopos = campos;
 	vec3 fakclopos = campos;
@@ -1236,22 +1262,22 @@ vec3 skyrender(vec3 skylig, vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunli
 		}
 	}
 
-#if FAST_CLOUD
-	skylig = physicsky(skylig, campos, skyvec, orisunlig, sunlig, sunvec);
-	skylig = cloudrender_fast(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
-#else
 	if (needrendercloud)
 	{
-		skylig = physicsky(skylig, reaclopos, skyvec, orisunlig, sunlig, sunvec);
+		skylig = physicsky(skylig, reaclopos, skyvec, orisunlig, sunvec);
+#if CLOUD_TYPE == 2
+		skylig = cloudrender_fast(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
+#elif CLOUD_TYPE == 3
 		skylig = cloudrender(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
+#endif
 		skylig = skyfog(skylig, reaclopos, campos, skyvec, orisunlig, sunvec);
 	}
 	else
 	{
-		skylig = physicsky(skylig, campos, skyvec, orisunlig, sunlig, sunvec);
+		skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec);
 	}
-#endif
 
+#endif
 	return skylig;
 }
 
@@ -1277,6 +1303,16 @@ vec3 getblonor(vec3 wornor, mat3 invTBN, vec4 texcol_o, vec4 texcol_r, vec4 texc
 
 	return invTBN * normalize(vec3(NORMAL_MAP_STRENGTH * vec2(dx, dy), 1.0));
 }
+
+#define GETBLONOR(N, wornor, invTBN, TEXTURE_0)                                              \
+	{                                                                                        \
+		vec4 texcol_o = textureLod(TEXTURE_0, uv0, 0.0);                                     \
+		vec4 texcol_r = textureLod(TEXTURE_0, uv0 + vec2(NORMAL_MAP_W / TEXSIZW, 0.0), 0.0); \
+		vec4 texcol_l = textureLod(TEXTURE_0, uv0 - vec2(NORMAL_MAP_W / TEXSIZW, 0.0), 0.0); \
+		vec4 texcol_u = textureLod(TEXTURE_0, uv0 - vec2(0.0, NORMAL_MAP_W / TEXSIZH), 0.0); \
+		vec4 texcol_d = textureLod(TEXTURE_0, uv0 + vec2(0.0, NORMAL_MAP_W / TEXSIZH), 0.0); \
+		N = getblonor(wornor, invTBN, texcol_o, texcol_r, texcol_l, texcol_u, texcol_d);     \
+	}
 
 vec3 getblonor_a(vec3 wornor, mat3 invTBN, vec4 texcol_o, vec4 texcol_r, vec4 texcol_l, vec4 texcol_u, vec4 texcol_d)
 {
@@ -1324,16 +1360,14 @@ vec2 watpos(vec4 chupos, float t)
 
 float getwatlig(vec4 chupos, vec2 uv1, float t)
 {
-	vec2 p = watpos(chupos, t);
-
-	float noi = 8.0 * pow4(watvor(2.0 * p + t));
+	float noi = 0.0;
+	noi += 8.0 * pow4(watvor(2.0 * watpos(chupos, t) + t));
 	return exp(-5.0 * (1.0 - uv1.y)) * (0.5 + noi);
 }
 
 vec3 getwatnor(mat3 tbn, vec4 chupos, float t)
 {
-	vec2 p = watpos(chupos, t);
-
-	vec2 par = 0.02 * perpar_2D(2.0 * p + t);
+	vec2 par = vec2(0.0);
+	par += 0.02 * perpar_2D(2.0 * watpos(chupos, t) + t);
 	return tbn * normalize(vec3(par, 1.0));
 }
