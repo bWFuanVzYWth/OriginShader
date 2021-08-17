@@ -602,9 +602,13 @@ float uv1y2lig(float uv1y)
 	return max(0.0, UY2L(l) - UY2L(15.0) * (1.0 - uv1y));
 }
 
-bool isunderwater(vec3 n, vec2 uv1, vec4 cp)
+bool isunderwater(vec3 n, vec2 uv1, vec4 cp, vec4 tc, vec4 vc)
 {
-	return n.y > 0.9 && uv1.y < 0.9 && abs((2.0 * cp.y - 15.0) / 16.0 - uv1.y) < 0.00002;
+	return n.y > 0.9											//normal
+		   && uv1.y < 0.9										//sunlight
+		   && abs((2.0 * cp.y - 15.0) / 16.0 - uv1.y) < 0.00002 //depth
+		   && !equ3(tc.rgb)										//stone
+		   && (equ3(vc.rgb) || vc.a < 0.001);					//grass
 }
 
 //brdf bsdf
@@ -1192,7 +1196,7 @@ vec3 getenvlig(vec2 uv1, vec3 sunlig, vec3 orisunlig, vec3 marpos, vec3 sunvec, 
 	vec3 skylum = physicsky(vec3(0.0), marpos, vec3(0.0, 0.8, 0.6), orisunlig, sunvec);
 	vec3 blolum = sunlig * Diffuse_Lambert(GRAY) * uv1y2lig(uv1.y);
 	vec3 poilum = getpoilig(uv1) * Diffuse_Lambert(GRAY);
-	return (ENVLIG + poilum + mix(blolum, skylum, uv1y2lig(uv1.y) * 0.6)) * ao;
+	return (ENVLIG + poilum + mix(blolum, skylum, uv1y2lig(uv1.y) * 0.7)) * ao;
 }
 
 vec3 getearpos(vec3 campos, vec4 worpos)
@@ -1202,7 +1206,7 @@ vec3 getearpos(vec3 campos, vec4 worpos)
 
 void setfog(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 orisunlig, vec3 sunvec, vec2 uv1)
 {
-	atmsca(outsca, insca, stapos, marpos, sunvec, PM_AIR, G_AIR);
+	atmsca(outsca, insca, stapos, marpos, sunvec, PM_FOG, G_FOG);
 	insca *= uv1.y; //修复水面看水下的雾计算错误
 }
 
@@ -1360,14 +1364,19 @@ vec2 watpos(vec4 chupos, float t)
 
 float getwatlig(vec4 chupos, vec2 uv1, float t)
 {
-	float noi = 0.0;
-	noi += 8.0 * pow4(watvor(2.0 * watpos(chupos, t) + t));
-	return exp(-5.0 * (1.0 - uv1.y)) * (0.5 + noi);
+	return exp(-5.0 * (1.0 - uv1.y))
+#if WATER_TYPE == 2
+		   * (0.5 + 8.0 * pow4(watvor(2.0 * watpos(chupos, t) + t)))
+#endif
+		;
 }
 
 vec3 getwatnor(mat3 tbn, vec4 chupos, float t)
 {
-	vec2 par = vec2(0.0);
-	par += 0.02 * perpar_2D(2.0 * watpos(chupos, t) + t);
-	return tbn * normalize(vec3(par, 1.0));
+	return tbn * normalize(vec3(0.02 * perpar_2D(2.0 * watpos(chupos, t) + t), 1.0));
+}
+
+vec3 getskyref(vec3 f0, float NoV, vec2 uv1, vec3 campos, vec3 V, vec3 N, vec3 L, vec3 orisunlig, vec3 closunlig, vec3 closkylum, vec4 thr, float t)
+{
+	return F_Fresnel(f0, NoV) * uv1y2lig(uv1.y) * skyrender(vec3(0.0), campos, reflect(-V, N), orisunlig, closunlig, closkylum, L, thr, t);
 }

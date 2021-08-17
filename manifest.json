@@ -2,17 +2,17 @@
     "format_version": 2,
     "header": {
         "description": "OriginShader是一个开源的光影\n交流1群:1090829462\n交流2群:852916450",
-        "name": "Origin Shader 3.4.3",
-        "uuid": "0575c61f-a5da-4b7f-9961-ffda29080323",
-        "version": [ 3, 4, 3 ],
+        "name": "Origin Shader 3.4.4",
+        "uuid": "0575c61f-a5da-4b7f-9961-ffda29080324",
+        "version": [ 3, 4, 4 ],
         "min_engine_version": [ 1, 16, 100 ]
     },
     "modules": [
         {
             "description": "",
             "type": "resources",
-            "uuid": "53644fac-a276-42e5-843f-a3c6f1690323",
-            "version": [ 3, 4, 3 ]
+            "uuid": "53644fac-a276-42e5-843f-a3c6f1690324",
+            "version": [ 3, 4, 4 ]
         }
     ]
 }

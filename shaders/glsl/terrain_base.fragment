@@ -30,6 +30,7 @@ in vec3 insca;
 
 in vec4 worpos;
 in vec4 chupos;
+
 #endif
 
 #include "uniformWorldConstants.h"
@@ -48,6 +49,7 @@ uniform sampler2D TEXTURE_2;
 void main()
 {
 #ifdef BYPASS_PIXEL_SHADER
+	gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
 	return;
 #else
 
@@ -125,7 +127,7 @@ void main()
 
 			vec3 poilig = getpoilig(uv1);
 			vec3 sunlig;
-			if (isunderwater(wornor, uv1, chupos))
+			if (isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
 				sunlig = grosunlig * getwatlig(chupos, uv1, TOTAL_REAL_WORLD_TIME);
 			else
 				sunlig = grosunlig * getshadow(uv1, varcol);
@@ -136,10 +138,10 @@ void main()
 			vec3 poiBRDF = Diffuse_Lambert(BaseColor);
 
 			vec3 sunref = sunlig * sunBRDF * NoL;
-			vec3 envref = BaseColor * envlig;
 			vec3 poiref = poilig * poiBRDF;
+			vec3 envref = envlig * BaseColor;
 
-			vec3 ligsum = sunref + envref + poiref;
+			vec3 ligsum = sunref + poiref + envref;
 			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
 		}
 #ifndef SEASONS
@@ -189,9 +191,9 @@ void main()
 			vec3 sunspe = Specular_BRDF(F0_WATER, ROUGHNESS_0, NoV, NoL, NoH, VoH);
 
 			vec3 sunref = sunlig * sunspe * NoL;
-			vec3 envref = F_Fresnel(F0_WATER, NoV) * uv1.y * skyrender(vec3(0.0), campos, reflect(-V, N), orisunlig, closunlig, closkylum, L, thr, TOTAL_REAL_WORLD_TIME);
-			vec3 sunsca = scattering_BSDF(BaseColor) * sunlig;
-			vec3 poisca = scattering_BSDF(BaseColor) * poilig;
+			vec3 envref = envlig * BaseColor + getskyref(F0_WATER, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
+			vec3 sunsca = sunlig * scattering_BSDF(BaseColor);
+			vec3 poisca = poilig * scattering_BSDF(BaseColor);
 
 			outcol.a = F0_WATER.g + line2gamma(lrgb2y(tonemap(sunref + envref + sunsca + poisca, LUM))); //要进行一次blend，用.a而不是.rgb控制反射的强度
 			envref /= gamma2line(outcol.a);
@@ -248,7 +250,7 @@ void main()
 
 			vec3 poilig = getpoilig(uv1);
 			vec3 sunlig;
-			if (isunderwater(wornor, uv1, chupos))
+			if (isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
 				sunlig = grosunlig * getwatlig(chupos, uv1, TOTAL_REAL_WORLD_TIME);
 			else
 				sunlig = uv1.y >= 0.875 ? grosunlig : vec3(0.0);
@@ -260,10 +262,10 @@ void main()
 			vec3 poiBRDF = Diffuse_Lambert(BaseColor);
 
 			vec3 sunref = sunlig * sunBRDF * NoL;
-			vec3 envref = BaseColor * envlig;
 			vec3 poiref = poilig * poiBRDF;
+			vec3 envref = envlig * BaseColor;
 
-			vec3 ligsum = sunref + envref + poiref;
+			vec3 ligsum = sunref + poiref + envref;
 			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
 
 #elif defined(BLEND) //transparent
@@ -310,7 +312,7 @@ void main()
 
 			vec3 poilig = getpoilig(uv1);
 			vec3 sunlig;
-			if (isunderwater(wornor, uv1, chupos))
+			if (isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
 				sunlig = grosunlig * getwatlig(chupos, uv1, TOTAL_REAL_WORLD_TIME);
 			else
 				sunlig = grosunlig * getshadow(uv1, varcol);
@@ -322,10 +324,9 @@ void main()
 			vec3 sunspe = Specular_BRDF(F0_GLASS, ROUGHNESS_0, NoV, NoL, NoH, VoH);
 
 			vec3 sunref = sunlig * sunspe * NoL;
-
-			vec3 envref = F_Fresnel(F0_GLASS, NoV) * uv1.y * skyrender(vec3(0.0), campos, reflect(-V, N), orisunlig, closunlig, closkylum, L, thr, TOTAL_REAL_WORLD_TIME);
-			vec3 sunsca = scattering_BSDF(BaseColor) * sunlig;
-			vec3 poisca = scattering_BSDF(BaseColor) * poilig;
+			vec3 envref = envlig * BaseColor + getskyref(F0_GLASS, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
+			vec3 sunsca = sunlig * scattering_BSDF(BaseColor);
+			vec3 poisca = poilig * scattering_BSDF(BaseColor);
 
 			outcol.a = texcol.a + line2gamma(lrgb2y(tonemap(envref + sunref, LUM))); //要进行一次blend，用.a而不是.rgb控制反射的强度
 			envref /= gamma2line(outcol.a);
@@ -334,16 +335,10 @@ void main()
 			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
 
 #else //default
-			float projdept = 1.0 / gl_FragCoord.w;
-			float ddxprojdept = dFdx(projdept);
-			float ddyprojdept = dFdy(projdept);
-
 			vec4 ddxpos = dFdx(chupos);
 			vec4 ddypos = dFdy(chupos);
 			vec2 ddxuv0 = dFdx(uv0);
 			vec2 ddyuv0 = dFdy(uv0);
-			vec2 ddxuv1 = dFdx(uv1);
-			vec2 ddyuv1 = dFdy(uv1);
 
 			vec4 texcol_ = texture(TEXTURE_0, uv0);
 
@@ -390,7 +385,7 @@ void main()
 
 			vec3 poilig = getpoilig(uv1);
 			vec3 sunlig;
-			if (isunderwater(wornor, uv1, chupos))
+			if (isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
 				sunlig = grosunlig * getwatlig(chupos, uv1, TOTAL_REAL_WORLD_TIME);
 			else
 				sunlig = grosunlig * getshadow(uv1, varcol);
@@ -406,7 +401,7 @@ void main()
 
 			vec3 ligsum = vec3(0.0);
 
-			if(isfluorescence)
+			if (isfluorescence)
 				ligsum += BaseColor * FLUORESCENCE;
 
 			if (ismetal)
@@ -420,18 +415,20 @@ void main()
 					vec3 sunspe = D_GGX(ROUGHNESS_0, NoH) * Vis_Smith(ROUGHNESS_0, NoV, NoL) * F_Fresnel(F0_MATEL, VoH);
 
 					vec3 sunref = sunlig * sunspe * NoL;
-					vec3 envref = getpoilig(uv1) * Diffuse_Lambert(GRAY) + F_Fresnel(F0_MATEL, NoV) * uv1.y * skyrender(vec3(0.0), campos, reflect(-V, N), orisunlig, closunlig, closkylum, L, thr, TOTAL_REAL_WORLD_TIME);
+					vec3 poiref = getpoilig(uv1) * Diffuse_Lambert(GRAY) * F0_MATEL;
+					vec3 envref = getskyref(F0_MATEL, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
 
-					ligsum += sunref + envref;
+					ligsum += sunref + poiref + envref;
 				}
 				else
 				{
 					vec3 sunspe = D_GGX(ROUGHNESS, NoH) * Vis_Smith(ROUGHNESS, NoV, NoL) * F_Fresnel(F0_MATEL, VoH);
 
 					vec3 sunref = sunlig * sunspe * NoL;
+					vec3 poiref = getpoilig(uv1) * Diffuse_Lambert(GRAY) * F0_MATEL;
 					vec3 envref = envlig * F0_MATEL;
 
-					ligsum += sunref + envref;
+					ligsum += sunref + poiref + envref;
 				}
 			}
 			else
@@ -444,11 +441,10 @@ void main()
 					vec3 poiBRDF = Diffuse_Lambert(BaseColor);
 
 					vec3 sunref = sunlig * sunBRDF * NoL;
-					vec3 envref = F_Fresnel(F0, NoV) * uv1.y * skyrender(vec3(0.0), campos, reflect(-V, N), orisunlig, closunlig, closkylum, L, thr, TOTAL_REAL_WORLD_TIME);
-					vec3 envdif = envlig * BaseColor;
 					vec3 poiref = poilig * poiBRDF;
+					vec3 envref = envlig * BaseColor + getskyref(F0, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
 
-					ligsum += poiref + sunref + envref + envdif;
+					ligsum += poiref + sunref + envref;
 				}
 				else
 				{
@@ -464,7 +460,6 @@ void main()
 			}
 
 			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
-
 
 #endif
 		}

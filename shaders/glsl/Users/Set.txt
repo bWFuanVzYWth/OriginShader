@@ -17,14 +17,14 @@
 //A Luminance of the sunlight
 
 #define MOOCOL vec3(0.6693, 0.7541, 1.0000)
-#define MOOLIGHT_A 0.7
+#define MOOLIGHT_A 0.75
 //R G B 太空中月光的颜色
 //R G B Color of moonlight in space
 //A 月光的亮度
 //A Luminance of the moonlight
 
 #define POICOL vec3(1.0000, 0.5155, 0.2087)
-#define POILIGHT_A 20.0
+#define POILIGHT_A 15.0
 //R G B 灯光的颜色
 //R G B Color of lamplight
 //A 灯光的亮度
@@ -59,10 +59,6 @@
 #define FAST_BSDF 1
 //使用更快但效果略差的BRDF
 
-#define USE_WATER_TEXTURE 1
-//使用原版水面材质
-//Use vanilla water surface material
-
 #define USE_NORMAL_MAP 1
 //1 使用自动生成的法线
 //0 禁用自动生成的法线
@@ -76,7 +72,7 @@
 #define NORMAL_MAP_W 1.5
 //法线映射宽度
 
-#define FLUORESCENCE 1.0
+#define FLUORESCENCE 0.5
 //材质荧光强度
 //Default fluorescence
 
@@ -86,8 +82,6 @@
 
 #define ROUGHNESS_0 0.05
 //光滑表面反射阳光的粗糙度
-
-
 
 #define HARDCODE_MATEL 0.8
 //金属的F0在材质颜色和pbr硬编码颜色间插值
@@ -105,7 +99,7 @@
 
 
 
-#define FOG_A 24.0
+#define FOG_A 16.0
 //能见度，数值越大雾越淡
 
 
@@ -134,7 +128,7 @@
 //物理天空中阳光方向的采样数
 //Sampling number of sunlight direction in sky mode
 
-#define MARNUM 3.0
+#define MARNUM 4.0
 //物理天空中视线方向的基础采样数
 //将由程序在设置的基础上自动调整
 //The number of basic samples in line of sight direction in sky mode.
@@ -144,10 +138,10 @@
 
 
 
-#define O3 (0.005 * vec3(3.426, 8.298, 0.356) * 0.06)
+#define O3 (0.006 * vec3(3.426, 8.298, 0.356) * 0.06)
 //臭氧浓度
 //Ozone
-#define LR (0.005 * vec3(0.580, 1.350, 3.310))
+#define LR (0.006 * vec3(0.580, 1.350, 3.310))
 //瑞利散射强度
 //Rayleigh scattering
 #define LM (0.015 * vec3(2.000, 2.000, 2.000))
@@ -156,13 +150,18 @@
 
 
 
-#define CLOUD_COVERAGE 0.65
+#define CLOUD_COVERAGE 0.6
 //云覆盖率，1.0为晴天
 //Cloud coverage，1.0 for sunny
 
+#define CLOUD_TYPE 3
+//1 无云
+//2 方块云(快速)
+//3 方块云(质量)
+
 #define CLOINTNUM  8.0
 #define CLOSAMNUM  3.0
-#define CLOMARNUM  3.0
+#define CLOMARNUM  6.0
 //果冻云形状，体素求交次数
 //Jelly cloud shape, number of voxel intersection
 //果冻云光照，体素求交次数
@@ -170,7 +169,7 @@
 //果冻云渲染的采样数
 //The number of samples for jelly cloud rendering
 
-#define CLOUD_LM 5.0
+#define CLOUD_LM 4.5
 //云的浓度
 //Attenuation coefficient of cloud to light
 #define CLOUD_SPEED vec2(0.02, 0.05)
@@ -179,14 +178,14 @@
 
 
 
+#define USE_WATER_TEXTURE 1
+//使用原版水面材质
+//Use vanilla water surface material
+
 #define WATER_TYPE 2
 //1 静水
 //2 小波浪
 
-#define CLOUD_TYPE 3
-//1 无云
-//2 方块云(快速)
-//3 方块云(质量)
 
 
 
@@ -216,11 +215,11 @@
 #define PM_AIR vec3(0.10, 0.80, 0.10)
 #define G_AIR vec3(-0.15, 0.75, 0.99)
 
-#define PM_FOG vec3(0.20, 0.50, 0.30)
-#define G_FOG vec3(-0.15, 0.15, 0.75)
+#define PM_FOG vec3(0.10, 0.80, 0.10)
+#define G_FOG vec3(-0.15, 0.75, 0.15)
 
-#define PM_CLOUD vec3(0.10, 0.70, 0.20)
-#define G_CLOUD vec3(-0.15, 0.15, 0.95)
+#define PM_CLOUD vec3(0.10, 0.75, 0.15)
+#define G_CLOUD vec3(-0.15, 0.05, 0.95)
 //乱七八糟的相位函数参数，自己看着调吧我放弃解释了
 
 
