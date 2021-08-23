@@ -31,7 +31,7 @@
 //A Luminance of the lamplight
 
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
-#define ENVLIGHT_A 0.015
+#define ENVLIGHT_A 0.02
 //R G B 环境光颜色
 //R G B Color of environment light
 //A 环境光强度
@@ -57,14 +57,14 @@
 
 
 #define FAST_BSDF 1
-//使用更快但效果略差的BRDF
+//更快但效果略差的BRDF
 
 #define USE_NORMAL_MAP 1
 //1 使用自动生成的法线
 //0 禁用自动生成的法线
 
 #define NORMAL_MAP_FIX 1
-//修复法线宽度不一直的问题
+//修复法线宽度不一致的问题
 
 #define NORMAL_MAP_STRENGTH 1.0
 //法线映射强度

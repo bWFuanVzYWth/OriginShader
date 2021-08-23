@@ -1,66 +1,57 @@
 #version 300 es
+#pragma optimize(on)
 
 precision highp float;
 
-#include "fragmentVersionCentroid.h"
-
 #include "shaderfunction.lin"
 
-#ifndef BYPASS_PIXEL_SHADER
-_centroid in vec2 uv0;
-_centroid in vec2 uv1;
+uniform mat4 WORLDVIEWPROJ;
+uniform mat4 WORLD;
+uniform mat4 WORLDVIEW;
+uniform mat4 PROJ;
+uniform vec4 FOG_COLOR;
+uniform vec2 FOG_CONTROL;
+uniform float TOTAL_REAL_WORLD_TIME;
+uniform sampler2D TEXTURE_0;
+uniform sampler2D TEXTURE_1;
+uniform sampler2D TEXTURE_2;
 
+#ifndef BYPASS_PIXEL_SHADER
 flat in vec3 campos;
 flat in vec3 clocampos;
-
 flat in vec3 orisunlig;
 flat in vec3 grosunlig;
 flat in vec3 L;
-
 flat in vec3 closunlig;
 flat in vec3 closkylum;
-
+centroid in vec2 uv0;
+centroid in vec2 uv1;
 in vec3 envlig;
-
 in vec4 col;
 in vec4 varcol;
-
 in vec3 outsca;
 in vec3 insca;
-
 in vec4 worpos;
 in vec4 chupos;
-
 #endif
 
-#include "uniformWorldConstants.h"
-#include "uniformShaderConstants.h"
-#include "uniformInterFrameConstants.h"
-#include "uniformPerFrameConstants.h"
-#include "util.h"
-
-LAYOUT_BINDING(0)
-uniform sampler2D TEXTURE_0;
-LAYOUT_BINDING(1)
-uniform sampler2D TEXTURE_1;
-LAYOUT_BINDING(2)
-uniform sampler2D TEXTURE_2;
+out vec4 FragColor;
 
 void main()
 {
 #ifdef BYPASS_PIXEL_SHADER
-	gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+	FragColor = vec4(0.0, 0.0, 0.0, 0.0);
 	return;
 #else
 
 	vec4 outcol = vec4(GRAY, 1.0);
 
-#if USE_ALPHA_TEST && !defined(SEASONS) && !defined(SEASONS_FAR) && !defined(BLEND)
+#if defined(ALPHA_TEST) && !defined(SEASONS) && !defined(SEASONS_FAR) && !defined(BLEND)
 	if (col.b == 0.0) //redstone_wire
 	{
 		vec4 texcol_ = texture(TEXTURE_0, uv0);
 
-#if USE_ALPHA_TEST && !defined(SEASONS_FAR)
+#if defined(ALPHA_TEST) && !defined(SEASONS_FAR)
 #ifdef ALPHA_TO_COVERAGE
 #define ALPHA_THRESHOLD 0.05
 #else
@@ -89,7 +80,7 @@ void main()
 
 			vec4 texcol_ = texture(TEXTURE_0, uv0);
 
-#if USE_ALPHA_TEST && !defined(SEASONS_FAR)
+#if defined(ALPHA_TEST) && !defined(SEASONS_FAR)
 #ifdef ALPHA_TO_COVERAGE
 #define ALPHA_THRESHOLD 0.05
 #else
@@ -149,7 +140,7 @@ void main()
 #endif
 #endif
 
-#if !USE_ALPHA_TEST && !defined(SEASONS) && !defined(SEASONS_FAR) && defined(BLEND)
+#if !defined(ALPHA_TEST) && !defined(SEASONS) && !defined(SEASONS_FAR) && defined(BLEND)
 			if (col.a < 0.999) //water
 		{
 			vec4 ddxpos = dFdx(chupos);
@@ -191,14 +182,16 @@ void main()
 			vec3 sunspe = Specular_BRDF(F0_WATER, ROUGHNESS_0, NoV, NoL, NoH, VoH);
 
 			vec3 sunref = sunlig * sunspe * NoL;
-			vec3 envref = envlig * BaseColor + getskyref(F0_WATER, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
+			vec3 skyref = getskyref(F0_WATER, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
+			vec3 envref = envlig * BaseColor;
 			vec3 sunsca = sunlig * scattering_BSDF(BaseColor);
 			vec3 poisca = poilig * scattering_BSDF(BaseColor);
 
-			outcol.a = F0_WATER.g + line2gamma(lrgb2y(tonemap(sunref + envref + sunsca + poisca, LUM))); //要进行一次blend，用.a而不是.rgb控制反射的强度
-			envref /= gamma2line(outcol.a);
+			outcol.a = F0_WATER.g + line2gamma(lrgb2y(tonemap(skyref + sunsca + poisca, LUM))); //要进行一次blend，用.a而不是.rgb控制反射的强度
+			skyref /= gamma2line(outcol.a);
+			sunref /= gamma2line(outcol.a);
 
-			vec3 ligsum = sunspe + envref + sunsca + poisca;
+			vec3 ligsum = sunspe + envref + skyref + sunsca + poisca;
 			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
 		}
 		else
@@ -206,7 +199,7 @@ void main()
 
 #if !defined(SEASONS) && !defined(SEASONS_FAR)
 		{
-#if USE_ALPHA_TEST //tallgrass
+#if defined(ALPHA_TEST) //tallgrass
 			vec4 ddxpos = dFdx(chupos);
 			vec4 ddypos = dFdy(chupos);
 			vec2 ddxuv0 = dFdx(uv0);
@@ -214,7 +207,7 @@ void main()
 
 			vec4 texcol_ = texture(TEXTURE_0, uv0);
 
-#if USE_ALPHA_TEST && !defined(SEASONS_FAR)
+#if defined(ALPHA_TEST) && !defined(SEASONS_FAR)
 #ifdef ALPHA_TO_COVERAGE
 #define ALPHA_THRESHOLD 0.05
 #else
@@ -276,7 +269,7 @@ void main()
 
 			vec4 texcol_ = texture(TEXTURE_0, uv0);
 
-#if USE_ALPHA_TEST && !defined(SEASONS_FAR)
+#if defined(ALPHA_TEST) && !defined(SEASONS_FAR)
 #ifdef ALPHA_TO_COVERAGE
 #define ALPHA_THRESHOLD 0.05
 #else
@@ -324,14 +317,16 @@ void main()
 			vec3 sunspe = Specular_BRDF(F0_GLASS, ROUGHNESS_0, NoV, NoL, NoH, VoH);
 
 			vec3 sunref = sunlig * sunspe * NoL;
-			vec3 envref = envlig * BaseColor + getskyref(F0_GLASS, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
+			vec3 skyref = getskyref(F0_GLASS, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
+			vec3 envref = envlig * BaseColor;
 			vec3 sunsca = sunlig * scattering_BSDF(BaseColor);
 			vec3 poisca = poilig * scattering_BSDF(BaseColor);
 
-			outcol.a = texcol.a + line2gamma(lrgb2y(tonemap(envref + sunref, LUM))); //要进行一次blend，用.a而不是.rgb控制反射的强度
-			envref /= gamma2line(outcol.a);
+			outcol.a = texcol.a + line2gamma(lrgb2y(tonemap(skyref, LUM))); //要进行一次blend，用.a而不是.rgb控制反射的强度
+			skyref /= gamma2line(outcol.a);
+			sunref /= gamma2line(outcol.a);
 
-			vec3 ligsum = sunspe + envref + sunsca + poisca;
+			vec3 ligsum = sunspe + envref + skyref + sunsca + poisca;
 			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
 
 #else //default
@@ -342,7 +337,7 @@ void main()
 
 			vec4 texcol_ = texture(TEXTURE_0, uv0);
 
-#if USE_ALPHA_TEST && !defined(SEASONS_FAR)
+#if defined(ALPHA_TEST) && !defined(SEASONS_FAR)
 #ifdef ALPHA_TO_COVERAGE
 #define ALPHA_THRESHOLD 0.05
 #else
@@ -466,7 +461,7 @@ void main()
 #endif
 	}
 
-	gl_FragColor = outcol;
+	FragColor = outcol;
 
 #endif
 }

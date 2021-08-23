@@ -1,32 +1,44 @@
 #version 300 es
+#pragma optimize(on)
 
 precision highp float;
 
-#include "vertexVersionCentroidUV.h"
-#include "uniformInterFrameConstants.h"
-#include "uniformPerFrameConstants.h"
-#include "uniformWorldConstants.h"
-
 #include "shaderfunction.lin"
 
+uniform mat4 WORLDVIEWPROJ;
+uniform mat4 WORLD;
+uniform mat4 WORLDVIEW;
+uniform mat4 PROJ;
+uniform vec4 CHUNK_ORIGIN_AND_SCALE;
 #if TRY_MCPE_NETEASE
-#include "uniformExtraVectorConstants.h"
+uniform vec4 EXTRA_VECTOR1;
+uniform vec4 EXTRA_VECTOR2;
+uniform vec4 EXTRA_VECTOR3;
+uniform vec4 EXTRA_VECTOR4;
+uniform vec4 SUN_DIR;
+uniform vec4 WATER_TEXTURE_UV_RANGE;
+uniform vec4 SKY_NEAR_COLOR;
+uniform vec4 SKY_FAR_COLOR;
+uniform vec4 RAIN_NEAR_COLOR;
+uniform vec4 RAIN_FAR_COLOR;
+uniform vec4 COLOR_MAPPING_PARAM;
 #endif
+uniform vec4 FOG_COLOR;
+uniform vec2 FOG_CONTROL;
+uniform float TOTAL_REAL_WORLD_TIME;
+uniform sampler2D TEXTURE_0;
 
-attribute POS4 POSITION;
-attribute vec2 TEXCOORD_0;
+in vec4 POSITION;
+in vec2 TEXCOORD_0;
 
-flat varying vec3 campos;
-flat varying vec3 clocampos;
-
-flat varying vec3 L;
-flat varying vec3 orisunlig;
-flat varying vec3 closunlig;
-flat varying vec3 closkylum;
-
-varying vec4 skypos;
-
-LAYOUT_BINDING(0) uniform sampler2D TEXTURE_0;
+flat out vec3 campos;
+flat out vec3 clocampos;
+flat out vec3 L;
+flat out vec3 orisunlig;
+flat out vec3 closunlig;
+flat out vec3 closkylum;
+centroid out vec2 uv;
+out vec4 skypos;
 
 void main()
 {

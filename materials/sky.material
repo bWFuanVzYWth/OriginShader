@@ -1,39 +1,10 @@
 {
-  "sun_moon": {
-    "states": [
-      "DisableDepthWrite",
-      "DisableAlphaWrite",
-      "Blending"
-    ],
-
-    "blendSrc": "SourceAlpha",
-    "blendDst": "Zero",
-
-		"vertexShader" : "shaders/sunmoon.vertex",
-		"vrGeometryShader": "shaders/sunmoon.geometry",
-		"fragmentShader" : "shaders/sunmoon.fragment",
-    "vertexFields": [
-      { "field": "Position" },
-      { "field": "UV0" }
-    ],
-
-    "samplerStates": [
-      {
-        "samplerIndex": 0,
-        "textureFilter": "Point"
-      }
-    ],
-
-    "msaaSupport": "Both"
-  },
   "cubemap": {
     "states": [
       "Blending"
     ],
-
     "blendSrc": "SourceAlpha",
     "blendDst": "OneMinusSrcAlpha",
-
     "vertexShader": "shaders/cubemap.vertex",
     "vrGeometryShader": "shaders/cubemap.geometry",
     "fragmentShader": "shaders/cubemap.fragment",
@@ -44,11 +15,13 @@
       }
     ],
     "vertexFields": [
-      { "field": "Position" },
-      { "field": "UV0" }
+      {
+        "field": "Position"
+      },
+      {
+        "field": "UV0"
+      }
     ],
-
     "msaaSupport": "Both"
-
   }
 }

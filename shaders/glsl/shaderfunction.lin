@@ -608,7 +608,8 @@ bool isunderwater(vec3 n, vec2 uv1, vec4 cp, vec4 tc, vec4 vc)
 		   && uv1.y < 0.9										//sunlight
 		   && abs((2.0 * cp.y - 15.0) / 16.0 - uv1.y) < 0.00002 //depth
 		   && !equ3(tc.rgb)										//stone
-		   && (equ3(vc.rgb) || vc.a < 0.001);					//grass
+		   && (equ3(vc.rgb) || vc.a < 0.00001)					//grass
+		   && abs(fract(cp.y) - 0.5) > 0.00001;					//slab
 }
 
 //brdf bsdf
