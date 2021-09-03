@@ -11,6 +11,7 @@ uniform mat4 WORLDVIEW;
 uniform mat4 PROJ;
 uniform vec4 FOG_COLOR;
 uniform vec2 FOG_CONTROL;
+uniform float RENDER_CHUNK_FOG_ALPHA;
 uniform float TOTAL_REAL_WORLD_TIME;
 uniform sampler2D TEXTURE_0;
 uniform sampler2D TEXTURE_1;

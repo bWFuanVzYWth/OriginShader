@@ -16,8 +16,8 @@
 //A 阳光的亮度
 //A Luminance of the sunlight
 
-#define MOOCOL vec3(0.6693, 0.7541, 1.0000)
-#define MOOLIGHT_A 0.75
+#define MOOCOL vec3(1.0000, 1.0000, 1.0000)
+#define MOOLIGHT_A 0.2
 //R G B 太空中月光的颜色
 //R G B Color of moonlight in space
 //A 月光的亮度
@@ -31,7 +31,7 @@
 //A Luminance of the lamplight
 
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
-#define ENVLIGHT_A 0.02
+#define ENVLIGHT_A 0.01
 //R G B 环境光颜色
 //R G B Color of environment light
 //A 环境光强度
@@ -43,9 +43,8 @@
 
 
 
-#define SUNDEC 0.25
-//太阳偏角
-//Solar declination
+#define LATITUDE 0.5236
+//30 deg
 
 #define SUN_R 0.009512
 //太阳的半径，单位为弧度
@@ -186,6 +185,20 @@
 //1 静水
 //2 小波浪
 
+#define MILKY_WAY_LIGHT 0.1
+//银河亮度
+
+#define MILKY_WAY_DEC_X 0.65
+#define MILKY_WAY_DEC_Y 0.65
+#define MILKY_WAY_DEC_Z 0.65
+//银河旋转角，改变月亮和银河的相对位置，随便填
+
+#define STAR_LIGHT 10.0
+//星星亮度倍率，在银河亮度的基础上提升星星亮度
+
+#define CHUNK_ANIMATION 1
+//区块加载动画
+
 
 
 
@@ -253,6 +266,11 @@
 #define FAST_MATH 0
 //使用更快但是精度更低的数学函数（实验性选项，默认关闭）
 //请注意这个选项并不能从根本上提升性能，甚至可能导致某些设备出现错误
+
+
+
+#define EARTH_SHADOW 1
+//地球遮挡
 
 
 
