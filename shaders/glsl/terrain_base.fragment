@@ -5,6 +5,10 @@ precision highp float;
 
 #include "shaderfunction.lin"
 
+uniform sampler2D TEXTURE_0;
+uniform sampler2D TEXTURE_1;
+uniform sampler2D TEXTURE_2;
+
 uniform mat4 WORLDVIEWPROJ;
 uniform mat4 WORLD;
 uniform mat4 WORLDVIEW;
@@ -13,9 +17,6 @@ uniform vec4 FOG_COLOR;
 uniform vec2 FOG_CONTROL;
 uniform float RENDER_CHUNK_FOG_ALPHA;
 uniform float TOTAL_REAL_WORLD_TIME;
-uniform sampler2D TEXTURE_0;
-uniform sampler2D TEXTURE_1;
-uniform sampler2D TEXTURE_2;
 
 #ifndef BYPASS_PIXEL_SHADER
 flat in vec3 campos;
@@ -38,8 +39,7 @@ in vec4 chupos;
 
 out vec4 FragColor;
 
-void main()
-{
+void main() {
 #ifdef BYPASS_PIXEL_SHADER
 	FragColor = vec4(0.0, 0.0, 0.0, 0.0);
 	return;
@@ -47,9 +47,10 @@ void main()
 
 	vec4 outcol = vec4(GRAY, 1.0);
 
+	vec3 wornor;
+
 #if defined(ALPHA_TEST) && !defined(SEASONS) && !defined(SEASONS_FAR) && !defined(BLEND)
-	if (col.b == 0.0) //redstone_wire
-	{
+	if(col.b == 0.0) { //redstone_wire
 		vec4 texcol_ = texture(TEXTURE_0, uv0);
 
 #if defined(ALPHA_TEST) && !defined(SEASONS_FAR)
@@ -58,20 +59,22 @@ void main()
 #else
 #define ALPHA_THRESHOLD 0.50
 #endif
-		if (texcol_.a < ALPHA_THRESHOLD)
+		if(texcol_.a < ALPHA_THRESHOLD)
 			discard;
 #endif
+		//vec3 blopos = fract(chupos.xyz);
 
 		outcol.rgb = texcol_.rgb * col.rgb;
-	}
-	else
+
+		//outcol.rgb = render_redstone_power(outcol.rgb, col.rgb, blopos, TEXTURE_0);
+	} else
 #endif
 
 	{
 
 #if !defined(SEASONS_FAR) && !defined(BLEND) //远处树叶不会进行alpha test
 #ifndef SEASONS
-		if (col.a < 0.001)
+		if(col.a < 0.001)
 #endif //leaves
 		{
 			vec4 ddxpos = dFdx(chupos);
@@ -87,7 +90,7 @@ void main()
 #else
 #define ALPHA_THRESHOLD 0.50
 #endif
-			if (texcol_.a < ALPHA_THRESHOLD)
+			if(texcol_.a < ALPHA_THRESHOLD)
 				discard;
 #endif
 
@@ -97,13 +100,12 @@ void main()
 			vec4 texcol = vec4(texcol_.rgb * varcol.rgb, texcol_.a);
 #endif
 
-			vec3 wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
+			wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
 
 #if USE_NORMAL_MAP
 			mat3 invTBN = getinvTBN(ddxuv0, ddyuv0, ddxpos, ddypos, wornor);
 
-			vec3 N;
-			GETBLONOR(N, wornor, invTBN, TEXTURE_0)
+			vec3 N = getblonor(TEXTURE_0, uv0, wornor, invTBN);
 #else
 			vec3 N = wornor;
 #endif
@@ -119,7 +121,7 @@ void main()
 
 			vec3 poilig = getpoilig(uv1);
 			vec3 sunlig;
-			if (isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
+			if(isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
 				sunlig = grosunlig * getwatlig(chupos, uv1, TOTAL_REAL_WORLD_TIME);
 			else
 				sunlig = grosunlig * getshadow(uv1, varcol);
@@ -142,8 +144,7 @@ void main()
 #endif
 
 #if !defined(ALPHA_TEST) && !defined(SEASONS) && !defined(SEASONS_FAR) && defined(BLEND)
-			if (col.a < 0.999) //water
-		{
+		if(col.a < 0.999) { //water
 			vec4 ddxpos = dFdx(chupos);
 			vec4 ddypos = dFdy(chupos);
 			vec2 ddxuv0 = dFdx(uv0);
@@ -151,7 +152,7 @@ void main()
 
 			vec4 texcol_ = texture(TEXTURE_0, uv0);
 
-			vec3 wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
+			wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
 #if WATER_TYPE == 1
 			vec3 N = wornor;
 #elif WATER_TYPE == 2
@@ -194,8 +195,7 @@ void main()
 
 			vec3 ligsum = sunspe + envref + skyref + sunsca + poisca;
 			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
-		}
-		else
+		} else
 #endif
 
 #if !defined(SEASONS) && !defined(SEASONS_FAR)
@@ -214,7 +214,7 @@ void main()
 #else
 #define ALPHA_THRESHOLD 0.50
 #endif
-			if (texcol_.a < ALPHA_THRESHOLD)
+			if(texcol_.a < ALPHA_THRESHOLD)
 				discard;
 #endif
 
@@ -224,11 +224,10 @@ void main()
 			vec4 texcol = vec4(texcol_.rgb * varcol.rgb, texcol_.a);
 #endif
 
-			vec3 wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
+			wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
 #if USE_NORMAL_MAP
 			mat3 invTBN = getinvTBN(ddxuv0, ddyuv0, ddxpos, ddypos, wornor);
-			vec3 N;
-			GETBLONOR(N, wornor, invTBN, TEXTURE_0)
+			vec3 N = getblonor(TEXTURE_0, uv0, wornor, invTBN);
 #else
 			vec3 N = wornor;
 #endif
@@ -244,7 +243,7 @@ void main()
 
 			vec3 poilig = getpoilig(uv1);
 			vec3 sunlig;
-			if (isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
+			if(isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
 				sunlig = grosunlig * getwatlig(chupos, uv1, TOTAL_REAL_WORLD_TIME);
 			else
 				sunlig = uv1.y >= 0.875 ? grosunlig : vec3(0.0);
@@ -276,7 +275,7 @@ void main()
 #else
 #define ALPHA_THRESHOLD 0.50
 #endif
-			if (texcol_.a < ALPHA_THRESHOLD)
+			if(texcol_.a < ALPHA_THRESHOLD)
 				discard;
 #endif
 
@@ -286,11 +285,10 @@ void main()
 			vec4 texcol = vec4(texcol_.rgb * varcol.rgb, texcol_.a);
 #endif
 
-			vec3 wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
+			wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
 #if USE_NORMAL_MAP
 			mat3 invTBN = getinvTBN(ddxuv0, ddyuv0, ddxpos, ddypos, wornor);
-			vec3 N;
-			GETBLONOR(N, wornor, invTBN, TEXTURE_0)
+			vec3 N = getblonor(TEXTURE_0, uv0, wornor, invTBN);
 #else
 			vec3 N = wornor;
 #endif
@@ -306,7 +304,7 @@ void main()
 
 			vec3 poilig = getpoilig(uv1);
 			vec3 sunlig;
-			if (isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
+			if(isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
 				sunlig = grosunlig * getwatlig(chupos, uv1, TOTAL_REAL_WORLD_TIME);
 			else
 				sunlig = grosunlig * getshadow(uv1, varcol);
@@ -344,7 +342,7 @@ void main()
 #else
 #define ALPHA_THRESHOLD 0.50
 #endif
-			if (texcol_.a < ALPHA_THRESHOLD)
+			if(texcol_.a < ALPHA_THRESHOLD)
 				discard;
 #endif
 
@@ -354,17 +352,13 @@ void main()
 			vec4 texcol = vec4(texcol_.rgb * varcol.rgb, texcol_.a);
 #endif
 
-			vec3 wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
+			wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
 
 			vec4 texcol_o = textureLod(TEXTURE_0, uv0, 0.0);
 
 #if USE_NORMAL_MAP
 			mat3 invTBN = getinvTBN(ddxuv0, ddyuv0, ddxpos, ddypos, wornor);
-			vec4 texcol_r = textureLod(TEXTURE_0, uv0 + vec2(NORMAL_MAP_W / TEXSIZW, 0.0), 0.0);
-			vec4 texcol_l = textureLod(TEXTURE_0, uv0 - vec2(NORMAL_MAP_W / TEXSIZW, 0.0), 0.0);
-			vec4 texcol_u = textureLod(TEXTURE_0, uv0 - vec2(0.0, NORMAL_MAP_W / TEXSIZH), 0.0);
-			vec4 texcol_d = textureLod(TEXTURE_0, uv0 + vec2(0.0, NORMAL_MAP_W / TEXSIZH), 0.0);
-			vec3 N = getblonor_a(wornor, invTBN, texcol_o, texcol_r, texcol_l, texcol_u, texcol_d);
+			vec3 N = getblonor_a(TEXTURE_0, uv0, wornor, invTBN);
 #else
 			vec3 N = wornor;
 #endif
@@ -381,7 +375,7 @@ void main()
 
 			vec3 poilig = getpoilig(uv1);
 			vec3 sunlig;
-			if (isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
+			if(isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
 				sunlig = grosunlig * getwatlig(chupos, uv1, TOTAL_REAL_WORLD_TIME);
 			else
 				sunlig = grosunlig * getshadow(uv1, varcol);
@@ -397,15 +391,13 @@ void main()
 
 			vec3 ligsum = vec3(0.0);
 
-			if (isfluorescence)
+			if(isfluorescence)
 				ligsum += BaseColor * FLUORESCENCE;
 
-			if (ismetal)
-			{
+			if(ismetal) {
 				vec3 F0_MATEL = mix(BaseColor, getmetalF0(blockcode), HARDCODE_MATEL);
 
-				if (issmooth)
-				{
+				if(issmooth) {
 					vec4 thr = vec4(ThresholdMap16(gl_FragCoord.xy));
 
 					vec3 sunspe = D_GGX(ROUGHNESS_0, NoH) * Vis_Smith(ROUGHNESS_0, NoV, NoL) * F_Fresnel(F0_MATEL, VoH);
@@ -415,9 +407,7 @@ void main()
 					vec3 envref = getskyref(F0_MATEL, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
 
 					ligsum += sunref + poiref + envref;
-				}
-				else
-				{
+				} else {
 					vec3 sunspe = D_GGX(ROUGHNESS, NoH) * Vis_Smith(ROUGHNESS, NoV, NoL) * F_Fresnel(F0_MATEL, VoH);
 
 					vec3 sunref = sunlig * sunspe * NoL;
@@ -426,11 +416,8 @@ void main()
 
 					ligsum += sunref + poiref + envref;
 				}
-			}
-			else
-			{
-				if (issmooth)
-				{
+			} else {
+				if(issmooth) {
 					vec4 thr = vec4(ThresholdMap16(gl_FragCoord.xy));
 
 					vec3 sunBRDF = getBRDF(BaseColor, F0, ROUGHNESS_0, NoV, NoL, NoH, VoH, VoL);
@@ -441,9 +428,7 @@ void main()
 					vec3 envref = envlig * BaseColor + getskyref(F0, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
 
 					ligsum += poiref + sunref + envref;
-				}
-				else
-				{
+				} else {
 					vec3 sunBRDF = getBRDF(BaseColor, F0, ROUGHNESS, NoV, NoL, NoH, VoH, VoL);
 					vec3 poiBRDF = Diffuse_Lambert(BaseColor);
 
@@ -462,6 +447,23 @@ void main()
 #endif
 	}
 
+#if REDSTONE_POWER || CHUNK_BOUND || LIGHT_MAP
+	vec3 blopos = fract(chupos.xyz);
+#endif
+
+#if defined(ALPHA_TEST) && !defined(SEASONS) && !defined(SEASONS_FAR) && !defined(BLEND)
+#if REDSTONE_POWER
+	outcol.rgb = render_redstone_power(outcol.rgb, col.rgb, blopos, TEXTURE_0);
+#endif
+#endif
+
+#if CHUNK_BOUND
+	outcol.rgb = render_chunk_bound(outcol.rgb, chupos.xyz, wornor, blopos);
+#endif
+
+#if LIGHT_MAP == 1
+	outcol.rgb = render_light_bound(outcol.rgb, uv1, wornor, blopos);
+#endif
 	FragColor = outcol;
 
 #endif

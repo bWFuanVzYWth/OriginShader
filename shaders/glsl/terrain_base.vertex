@@ -5,6 +5,10 @@ precision highp float;
 
 #include "shaderfunction.lin"
 
+uniform sampler2D TEXTURE_0;
+uniform sampler2D TEXTURE_1;
+uniform sampler2D TEXTURE_2;
+
 uniform mat4 WORLDVIEWPROJ;
 uniform mat4 WORLD;
 uniform mat4 WORLDVIEW;
@@ -27,11 +31,8 @@ uniform vec4 FOG_COLOR;
 uniform vec2 FOG_CONTROL;
 uniform float RENDER_CHUNK_FOG_ALPHA;
 uniform float TOTAL_REAL_WORLD_TIME;
-uniform sampler2D TEXTURE_0;
-uniform sampler2D TEXTURE_1;
-uniform sampler2D TEXTURE_2;
 
-in POS4 POSITION;
+in vec4 POSITION;
 in vec4 COLOR;
 in vec2 TEXCOORD_0;
 in vec2 TEXCOORD_1;
@@ -55,20 +56,22 @@ out vec4 worpos;
 out vec4 chupos;
 #endif
 
-void main()
-{
-	chupos = POSITION;
+void main() {
+	chupos = POSITION; //只是为了区块动画
 
-#if CHUNK_ANIMATION //茶宝yyds
-	chupos.y += 12.0 * pow2(cos(-MATH_PI * RENDER_CHUNK_FOG_ALPHA + MATH_PI * 0.5));
-	chupos.y += 128.0 * (RENDER_CHUNK_FOG_ALPHA + log(1.0 - RENDER_CHUNK_FOG_ALPHA));
+#ifdef ALLOW_FADE
+#if CHUNK_ANIMATION
+	chupos.xyz = chunk_animation(chupos.xyz, RENDER_CHUNK_FOG_ALPHA);
+#endif
 #endif
 
 #ifdef AS_ENTITY_RENDERER
-	worpos = POSITION;
+	worpos = chupos;
 #else
-	worpos = vec4(POSITION.xyz * CHUNK_ORIGIN_AND_SCALE.w + CHUNK_ORIGIN_AND_SCALE.xyz, 1.0);
+	worpos = vec4(chupos.xyz * CHUNK_ORIGIN_AND_SCALE.w + CHUNK_ORIGIN_AND_SCALE.xyz, 1.0);
 #endif
+
+	chupos = POSITION; //真正传递的
 
 	gl_Position = WORLDVIEWPROJ * worpos;
 

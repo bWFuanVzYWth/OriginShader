@@ -1,4 +1,5 @@
-//这个文件不出现任何代码，只有预处理命令
+
+//Origin Shader
 //基础选项 Basic options
 
 #define PLANET_ATMOSPHERE 0
@@ -43,7 +44,8 @@
 
 
 
-#define LATITUDE 0.5236
+//#define LATITUDE 0.9
+#define LATITUDE 0.2618
 //30 deg
 
 #define SUN_R 0.009512
@@ -198,6 +200,41 @@
 
 #define CHUNK_ANIMATION 1
 //区块加载动画
+
+
+
+
+
+
+
+
+//Redstone Tools
+
+#define REDSTONE_POWER 1
+//0 关闭红石能量显示
+//1 启用红石能量显示
+
+#define LIGHT_MAP 1
+//0 关闭亮度显示
+//1 显示亮度分界线
+//2 显示亮度数值（无效）
+
+#define CHUNK_BOUND 1
+//0 关闭区块边界线
+//1 显示区块边界线
+
+#define CHUNK_BOUND_COLOR_X vec4(1.0, 0.0, 0.0, 0.5)
+#define CHUNK_BOUND_COLOR_Y vec4(0.0, 1.0, 0.0, 0.5)
+#define CHUNK_BOUND_COLOR_Z vec4(0.0, 0.0, 1.0, 0.5)
+#define CHUNK_BOUND_COLOR_O vec4(1.0, 1.0, 1.0, 0.2)
+//区块边界线的颜色
+
+#define LIGHT_BOUND_COLOR vec4(1.0, 0.5, 0.0, 0.5)
+//亮度边界线的颜色
+
+
+
+
 
 
 
