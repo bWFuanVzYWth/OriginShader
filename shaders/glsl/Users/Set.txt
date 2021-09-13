@@ -214,12 +214,12 @@
 //0 关闭红石能量显示
 //1 启用红石能量显示
 
-#define LIGHT_MAP 1
+#define LIGHT_MAP 0
 //0 关闭亮度显示
 //1 显示亮度分界线
 //2 显示亮度数值（无效）
 
-#define CHUNK_BOUND 1
+#define CHUNK_BOUND 0
 //0 关闭区块边界线
 //1 显示区块边界线
 

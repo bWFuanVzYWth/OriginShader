@@ -1135,7 +1135,7 @@ vec3 getenvlig(vec2 uv1, vec3 sunlig, vec3 orisunlig, vec3 marpos, vec3 sunvec, 
 	vec3 skylum = physicsky(vec3(0.0), marpos, vec3(0.0, 0.8, 0.6), orisunlig, sunvec);
 	vec3 blolum = sunlig * Diffuse_Lambert(GRAY) * uv1y2lig(uv1.y);
 	vec3 poilum = getpoilig(uv1) * Diffuse_Lambert(GRAY);
-	return (ENVLIG + poilum + mix(blolum, skylum, uv1y2lig(uv1.y) * 0.7)) * ao;
+	return (ENVLIG + poilum + mix(blolum, skylum, uv1y2lig(uv1.y) * 0.65)) * ao;
 }
 
 vec3 getearpos(vec3 campos, vec4 worpos) {
@@ -1152,25 +1152,6 @@ vec3 skyfog(vec3 skylig, vec3 stapos, vec3 marpos, vec3 marvec, vec3 orisunlig, 
 	vec3 outsca;
 	atmsca(outsca, insca, stapos, marpos, sunvec, PM_AIR, G_AIR);
 	return skylig * outsca + orisunlig * insca;
-}
-
-//现在用的星空
-vec2 getskyuv(vec3 skyvec, mat3 M_sky) {
-	const mat3 M_mkw_x = mat3(vec3(1.0, 0.0, 0.0), vec3(0.0, cos(MILKY_WAY_DEC_X), sin(MILKY_WAY_DEC_X)), vec3(0.0, -sin(MILKY_WAY_DEC_X), cos(MILKY_WAY_DEC_X)));
-	const mat3 M_mkw_y = mat3(vec3(cos(MILKY_WAY_DEC_Y), 0.0, sin(MILKY_WAY_DEC_Y)), vec3(0.0, 1.0, 0.0), vec3(-sin(MILKY_WAY_DEC_Y), 0.0, cos(MILKY_WAY_DEC_Y)));
-	const mat3 M_mkw_z = mat3(vec3(cos(MILKY_WAY_DEC_Z), sin(MILKY_WAY_DEC_Z), 0.0), vec3(-sin(MILKY_WAY_DEC_Z), cos(MILKY_WAY_DEC_Z), 0.0), vec3(0.0, 0.0, 1.0));
-
-	const mat3 M_mkw = M_mkw_z * M_mkw_y * M_mkw_x;
-
-	M_sky = M_sky * M_mkw;
-
-	vec3 mkwvec = transpose(M_sky) * skyvec;
-
-	vec2 skyvec_halfx = normalize(vec2(1.0, 0.0) + normalize(mkwvec.xz));
-	vec2 skyuv = vec2(1.0 / MATH_PI, 0.5 / MATH_PI);
-	skyuv *= acos(vec2(skyvec_halfx.y, mkwvec.y));
-
-	return skyuv;
 }
 
 vec3 skyrender(vec3 skylig, vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunlig, vec3 skylum, vec3 sunvec, vec4 thr, float gametime) {

@@ -1,0 +1,34 @@
+{
+  "resource_pack_name": "vanilla",
+  "texture_name": "atlas.terrain",
+  "padding": 8,
+  "num_mip_levels": 4,
+  "texture_data": {
+    "aaaa_F720C203-2ABB-FBC0-A5C5-91C08F925047_RedstoneTools": {
+      "textures":[
+        "textures/RedstoneTools/00",
+        "textures/RedstoneTools/01",
+        "textures/RedstoneTools/02",
+        "textures/RedstoneTools/03",
+        "textures/RedstoneTools/04",
+        "textures/RedstoneTools/05",
+        "textures/RedstoneTools/06",
+        "textures/RedstoneTools/07",
+        "textures/RedstoneTools/08",
+        "textures/RedstoneTools/09",
+        "textures/RedstoneTools/10",
+        "textures/RedstoneTools/11",
+        "textures/RedstoneTools/12",
+        "textures/RedstoneTools/13",
+        "textures/RedstoneTools/14",
+        "textures/RedstoneTools/15"
+      ]
+    },
+    "redstone_dust_cross": {
+      "textures": "textures/RedstoneTools/redstone_dust_cross"
+    },
+    "redstone_dust_line": {
+      "textures": "textures/RedstoneTools/redstone_dust_line"
+    }
+  }
+}

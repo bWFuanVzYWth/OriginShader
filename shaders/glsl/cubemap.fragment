@@ -15,16 +15,13 @@ uniform vec2 FOG_CONTROL;
 uniform float TOTAL_REAL_WORLD_TIME;
 uniform sampler2D TEXTURE_0;
 
-flat in vec3 M_sky_0;
-flat in vec3 M_sky_1;
-flat in vec3 M_sky_2;
-
 flat in vec3 campos;
 flat in vec3 clocampos;
 flat in vec3 L;
 flat in vec3 orisunlig;
 flat in vec3 closunlig;
 flat in vec3 closkylum;
+flat in float isday;
 centroid in vec2 uv;
 in vec4 skypos;
 
@@ -39,23 +36,14 @@ void main() {
 
 	vec4 thr = texelFetch(TEXTURE_0, (ivec2(gl_FragCoord.xy) + 2400) % 256, 0);
 
-	//TODO 改进昼夜判定
-	if(orisunlig.r < 1.0) { //night
-		mat3 M_sky;
-		M_sky[0] = M_sky_0;
-		M_sky[1] = M_sky_1;
-		M_sky[2] = M_sky_2;
-
-		vec2 skyuv = getskyuv(skyvec, M_sky);
-
-		vec4 skytex = texture(TEXTURE_0, skyuv);
+	if(isday < 0.5) { //night
+		vec4 skytex = texture(TEXTURE_0, uv);
 		skylig = gamma2line(skytex.rgb) * MILKY_WAY_LIGHT;
 		float maxrgb = max(max(skytex.r, skytex.g), skytex.b);
 		skylig *= 1.0 + pow4(maxrgb) * STAR_LIGHT;
 	}
 
 	skylig = physicsun(skylig, orisunlig, L, skyvec, SUN_R);
-
 	skylig = skyrender(skylig, campos, skyvec, orisunlig, closunlig, closkylum, L, thr, TOTAL_REAL_WORLD_TIME);
 
 	outcol.rgb = lig2col(skylig);

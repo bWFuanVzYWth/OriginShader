@@ -62,11 +62,7 @@ void main() {
 		if(texcol_.a < ALPHA_THRESHOLD)
 			discard;
 #endif
-		//vec3 blopos = fract(chupos.xyz);
-
 		outcol.rgb = texcol_.rgb * col.rgb;
-
-		//outcol.rgb = render_redstone_power(outcol.rgb, col.rgb, blopos, TEXTURE_0);
 	} else
 #endif
 
@@ -366,6 +362,7 @@ void main() {
 			vec3 V = normalize(-worpos.xyz);
 			vec3 H = normalize(V + L);
 
+			//TODO max改saturate
 			//normal mapping会产生非法负值，钳制即可
 			float NoV = max(0.0, dot(N, V));
 			float NoL = max(0.0, dot(N, L));
