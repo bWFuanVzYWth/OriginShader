@@ -298,7 +298,7 @@ float lrgb2y(vec3 col) {
 	return dot(col, vec3(0.2126, 0.7152, 0.0722));
 }
 
-//random, hash, noise
+//hash, noise
 
 float ThresholdMap16(vec2 p) {
 	//https://en.wikipedia.org/wiki/Ordered_dithering
@@ -307,89 +307,30 @@ float ThresholdMap16(vec2 p) {
 	return TM[p4.y][p4.x];
 }
 
-float RandBBSfloat(float seed) {
-	const float BBS_PRIME24 = 4093.0;
-	float s = fract(seed / BBS_PRIME24);
-	s = fract(s * s * BBS_PRIME24);
-	s = fract(s * s * BBS_PRIME24);
-	return s;
+vec2 hash22(vec2 p) {
+#if HASH22_TYPE == 1
+//4 fract    5 mad    5 *
+	vec2 r2 = (1.0 / 4093.0) * p + vec2(0.273, 0.478);
+	r2 = fract(4093.0 * dot(r2, r2) + vec2(0.273, 0.478));
+	r2 = fract(r2 * r2 * 4093.0);
+#endif
+
+	return r2;
 }
 
 float hash21(vec2 p) {
-#if MOBILE //fp16
-	const float C = 1024.0 / MATH_PHI;
-	vec4 v = (1.0 / 32.0) * p.xyxy + vec4(0.1, 0.2, 0.3, 0.4);
-#else //fp32
-	const float C = 65536.0 / MATH_PHI;
-	vec4 v = (1.0 / 65536.0) * p.xyxy + vec4(0.1, 0.2, 0.3, 0.4);
+#if HASH21_TYPE == 1
+//2 fract    3 mad    4 *
+	vec2 r2 = (1.0 / 4093.0) * p + vec2(0.273, 0.478);
+	float r = fract(dot(r2, r2) * 4093.0);
+	r = fract(r * r * 4093.0);
+
+#elif HASH21_TYPE == 2
+//1 fract    1 mad    2 *    1 sin
+	float r = fract(43757.5453 * sin(dot(p, vec2(12.9898, 78.233))));
 #endif
 
-	v.xyzw = fract(v.yzwx * C + v.xyzw);
-	v.xyz = fract(v.yzw * C + v.xyz);
-	v.xy = fract(v.yz * C + v.xy);
-	v.x = fract(v.y * C + v.x);
-
-	return v.x;
-}
-
-vec2 hash22(vec2 p) {
-#if MOBILE //fp16
-	const float C = 1024.0 / MATH_PHI;
-	vec4 v = (1.0 / 32.0) * p.xyxy + vec4(0.1, 0.2, 0.3, 0.4);
-#else //fp32
-	const float C = 65536.0 / MATH_PHI;
-	vec4 v = (1.0 / 65536.0) * p.xyxy + vec4(0.1, 0.2, 0.3, 0.4);
-#endif
-
-	v.xyzw = fract(v.yzwx * C + v.xyzw);
-	v.xyzw = fract(v.yzwx * C + v.xyzw);
-	v.xyz = fract(v.yzw * C + v.xyz);
-	v.xy = fract(v.yz * C + v.xy);
-
-	return v.xy;
-}
-
-float hash31(vec3 p) {
-#if MOBILE //fp16
-	const float C = 1024.0 / MATH_PHI;
-	vec4 v = (1.0 / 32.0) * p.xyzy + vec4(0.1, 0.2, 0.3, 0.4);
-#else //fp32
-	const float C = 65536.0 / MATH_PHI;
-	vec4 v = (1.0 / 65536.0) * p.xyzx + vec4(0.1, 0.2, 0.3, 0.4);
-#endif
-
-	v.xyzw = fract(v.yzwx * C + v.xyzw);
-	v.xyz = fract(v.yzw * C + v.xyz);
-	v.xy = fract(v.yz * C + v.xy);
-	v.x = fract(v.y * C + v.x);
-
-	return v.x;
-}
-
-vec2 hash32(vec3 p) {
-#if MOBILE //fp16
-	const float C = 1024.0 / MATH_PHI;
-	vec4 v = (1.0 / 32.0) * p.xyzy + vec4(0.1, 0.2, 0.3, 0.4);
-#else //fp32
-	const float C = 65536.0 / MATH_PHI;
-	vec4 v = (1.0 / 65536.0) * p.xyzx + vec4(0.1, 0.2, 0.3, 0.4);
-#endif
-
-	v.xyzw = fract(v.yzwx * C + v.xyzw);
-	v.xyzw = fract(v.yzwx * C + v.xyzw);
-	v.xyz = fract(v.yzw * C + v.xyz);
-	v.xy = fract(v.yz * C + v.xy);
-
-	return v.xy;
-}
-
-vec2 nextrand_2d(vec2 v) {
-#if MOBILE //fp16
-	const float C = 1024.0 / MATH_PHI;
-#else //fp32
-	const float C = 65536.0 / MATH_PHI;
-#endif
-	return fract(v.yx * C + v.xy);
+	return r;
 }
 
 float pernoi_2D(vec2 p) {
@@ -504,14 +445,16 @@ float getleaao(vec3 c) {
 	const vec3 O = vec3(0.682352941176471, 0.643137254901961, 0.164705882352941);
 	const vec3 N = vec3(0.195996912842436, 0.978673548072766, -0.061508507207520);
 
-	return length(c) / dot(O, N) * dot(normalize(c), N);
+	//return length(c) / dot(O, N) * dot(normalize(c), N);
+	return dot(c , N) / dot(O, N);
 }
 
 float getgraao(vec3 c) {
 	const vec3 O = vec3(0.745098039215686, 0.713725490196078, 0.329411764705882);
 	const vec3 N = vec3(0.161675377098328, 0.970052262589970, 0.181272392504186);
 
-	return length(c) / dot(O, N) * dot(normalize(c), N);
+	//return length(c) / dot(O, N) * dot(normalize(c), N);
+	return dot(c , N) / dot(O, N);
 }
 
 vec4 getvarcol(vec4 c) {
@@ -532,7 +475,7 @@ float getshadow(vec2 uv1, vec4 varcol) {
 	float shadow;
 
 #if FAST_SOFTSHADOW
-	shadow = saturate(uv1.y * (1.0 / SUN_R) + (1.0 - 0.875 * (1.0 / SUN_R)));
+	shadow = saturate(uv1.y * (1.0 / SOFTSHADOW / SUN_R) + (1.0 - 0.875 * (1.0 / SOFTSHADOW / SUN_R)));
 	shadow = (-2.0 * shadow + 3.0) * shadow * shadow;
 #else
 	bool t_a = uv1.y >= 0.875;
@@ -541,7 +484,7 @@ float getshadow(vec2 uv1, vec4 varcol) {
 	if(t_a || t_b) //跳过反三角函数
 		shadow = t_a ? 1.0 : 0.0;
 	else {
-		shadow = saturate(uv1.y * (1.0 / SUN_R) + (1.0 - 0.875 * (1.0 / SUN_R))) * 2.0 - 1.0;
+		shadow = saturate(uv1.y * (1.0 / SOFTSHADOW / SUN_R) + (1.0 - 0.875 * (1.0 / SOFTSHADOW / SUN_R))) * 2.0 - 1.0;
 		shadow = (sqrt(1.0 - shadow * shadow) * shadow + asin(shadow)) * (1.0 / MATH_PI) + 0.5;
 	}
 #endif
@@ -565,11 +508,11 @@ float uv1y2lig(float uv1y) {
 
 //TODO 目前还不能进行侧面检测，还需要进一步减少误判
 bool isunderwater(vec3 n, vec2 uv1, vec4 cp, vec4 tc, vec4 vc) {
-	return n.y > 0.9										//normal
-	&& uv1.y < 0.9											//sunlight
-	&& abs((2.0 * cp.y - 15.0) / 16.0 - uv1.y) < 0.00002 	//depth
+	return n.y > 0.9											//normal
+	&& uv1.y < 0.9										//sunlight
+	&& abs((2.0 * cp.y - 15.0) / 16.0 - uv1.y) < 0.00002 //depth
 	&& !equ3(tc.rgb)										//stone
-	&& (equ3(vc.rgb) || vc.a < 0.00001)						//grass
+	&& (equ3(vc.rgb) || vc.a < 0.00001)					//grass
 	&& abs(fract(cp.y) - 0.5) > 0.00001;					//slab
 }
 
@@ -704,9 +647,9 @@ vec3 getBRDF(vec3 BaseColor, vec3 SpecularColor, float Roughness, float NoV, flo
 }
 
 vec3 getmetalF0(int c) {
-	const mat4 F0_METAL = mat4(vec4(1.000, 0.782, 0.344, 0.0),	 //金
-	vec4(0.972, 0.960, 0.915, 0.0),	 //银
-	vec4(0.955, 0.638, 0.538, 0.0),	 //铜
+	const mat4 F0_METAL = mat4(vec4(1.000, 0.782, 0.344, 0.0),	//金
+	vec4(0.972, 0.960, 0.915, 0.0),	//银
+	vec4(0.955, 0.638, 0.538, 0.0),	//铜
 	vec4(0.562, 0.565, 0.578, 0.0)); //铁
 
 	return F0_METAL[(c & 0xC) >> 2].rgb;
@@ -741,7 +684,7 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
 	vec2 adssum = vec2(0.0);
 
 	//仅用到瑞利散射
-	float mpx = exp(length(sampos + max(PoL, 0.0) * sunvec) * (1.0 / -HR) + (EARTH_R / HR));
+	float mpx = exp(length(sampos + saturate(PoL) * sunvec) * (1.0 / -HR) + (EARTH_R / HR));
 
 	float em = mpx - t1.x;
 	float dp = (-2.0 * mpx + t1.x) * (0.99999 / SAMNUM); //1.0 -> 0.99999
@@ -814,7 +757,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 	float dp;
 
 	if(nohitflag) {
-		vec3 maxpos = marpos + max(PoV, 0.0) * marvec;
+		vec3 maxpos = marpos + saturate(PoV) * marvec;
 		mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
 		em = mpx - t1.x;
 		dp = (-2.0 * mpx + t1.x) * (0.99999 / MARNUM); //1.0 -> 0.99999
@@ -963,7 +906,6 @@ vec3 getsunlig(vec3 marpos, vec3 orisunlig, vec3 sunvec) {
 	return max(vec3(0.0), orisunlig * exp((-RO) * adorigin.x + (-LM) * adorigin.y));
 }
 
-//准备弃用
 vec3 physicsun(vec3 skylig, vec3 orisunlig, vec3 sunvec, vec3 skyvec, const float r) {
 	//http://www.physics.hmc.edu/faculty/esin/a101/limbdarkening.pdf
 	const vec3 u = vec3(1.0, 1.0, 1.0);
@@ -978,29 +920,7 @@ vec3 physicsun(vec3 skylig, vec3 orisunlig, vec3 sunvec, vec3 skyvec, const floa
 		float mu = sqrt(1.0 - pow2(theta / r));
 		vec3 factor = u * pow(vec3(mu), a) + (1.0 - u);
 
-		return skylig + max(vec3(1000.0), lig * factor);
-	} else {
-		return skylig;
-	}
-}
-
-//FIXME 日食，较大可能是产生了过大的亮度值
-vec3 physicsun(vec3 skylig, vec3 orisunlig, vec3 mkwvec, const float r) {
-	//http://www.physics.hmc.edu/faculty/esin/a101/limbdarkening.pdf
-	const vec3 u = vec3(1.0, 1.0, 1.0);
-	const vec3 a = vec3(0.397, 0.503, 0.652);
-	/*const*/ float s = 2.0 * MATH_PI * (1.0 - cos(r)); //const会无法通过编译
-
-	//float theta = acos(dot(mkwvec, sunvec));
-	float theta = acos(dot(mkwvec, vec3(1.0, 0.0, 0.0)));
-
-	if(theta < r) {
-		vec3 lig = orisunlig / s;
-		//vec3 lig = orisunlig * 5.0; //物理不正确，但是好看
-		float mu = sqrt(1.0 - pow2(theta / r));
-		vec3 factor = u * pow(vec3(mu), a) + (1.0 - u);
-
-		return skylig + max(vec3(1000.0), lig * factor);
+		return skylig + min(vec3(10000.0), lig * factor);
 	} else {
 		return skylig;
 	}

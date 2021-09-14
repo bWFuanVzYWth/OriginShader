@@ -52,6 +52,9 @@
 //太阳的半径，单位为弧度
 //The radius of the sun, in radians
 
+#define SOFTSHADOW 3.0
+//软阴影宽度
+
 #define FAST_SOFTSHADOW 1
 //更快的软阴影
 
@@ -151,7 +154,7 @@
 
 
 
-#define CLOUD_COVERAGE 0.6
+#define CLOUD_COVERAGE 0.65
 //云覆盖率，1.0为晴天
 //Cloud coverage，1.0 for sunny
 
@@ -258,6 +261,12 @@
 //开发者选项
 #define WHITEWORLD 0
 //整个世界变成纯白，用于观察光照
+
+
+
+#define HASH21_TYPE 1
+
+#define HASH22_TYPE 1
 
 
 

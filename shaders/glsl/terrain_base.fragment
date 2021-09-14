@@ -1,7 +1,10 @@
 #version 300 es
 #pragma optimize(on)
 
+#ifdef ORIGIN_SHADER
+
 precision highp float;
+precision highp int;
 
 #include "shaderfunction.lin"
 
@@ -109,9 +112,9 @@ void main() {
 			vec3 H = normalize(V + L);
 
 			//normal mapping会产生非法负值，钳制即可
-			float NoV = max(0.0, dot(N, V));
-			float NoL = max(0.0, dot(N, L));
-			float NoH = max(0.0, dot(N, H));
+			float NoV = saturate(dot(N, V));
+			float NoL = saturate(dot(N, L));
+			float NoH = saturate(dot(N, H));
 			float VoH = dot(V, H);
 			float VoL = dot(V, L);
 
@@ -159,9 +162,9 @@ void main() {
 			vec3 H = normalize(V + L);
 
 			//normal mapping会产生非法负值，钳制即可
-			float NoV = max(0.0, dot(N, V));
-			float NoL = max(0.0, dot(N, L));
-			float NoH = max(0.0, dot(N, H));
+			float NoV = saturate(dot(N, V));
+			float NoL = saturate(dot(N, L));
+			float NoH = saturate(dot(N, H));
 			float VoH = dot(V, H);
 			float VoL = dot(V, L);
 
@@ -231,9 +234,9 @@ void main() {
 			vec3 H = normalize(V + L);
 
 			//normal mapping会产生非法负值，钳制即可
-			float NoV = max(0.0, dot(N, V));
-			float NoL = max(0.0, dot(N, L));
-			float NoH = max(0.0, dot(N, H));
+			float NoV = saturate(dot(N, V));
+			float NoL = saturate(dot(N, L));
+			float NoH = saturate(dot(N, H));
 			float VoH = dot(V, H);
 			float VoL = dot(V, L);
 
@@ -292,9 +295,9 @@ void main() {
 			vec3 H = normalize(V + L);
 
 			//normal mapping会产生非法负值，钳制即可
-			float NoV = max(0.0, dot(N, V));
-			float NoL = max(0.0, dot(N, L));
-			float NoH = max(0.0, dot(N, H));
+			float NoV = saturate(dot(N, V));
+			float NoL = saturate(dot(N, L));
+			float NoH = saturate(dot(N, H));
 			float VoH = dot(V, H);
 			float VoL = dot(V, L);
 
@@ -362,11 +365,10 @@ void main() {
 			vec3 V = normalize(-worpos.xyz);
 			vec3 H = normalize(V + L);
 
-			//TODO max改saturate
 			//normal mapping会产生非法负值，钳制即可
-			float NoV = max(0.0, dot(N, V));
-			float NoL = max(0.0, dot(N, L));
-			float NoH = max(0.0, dot(N, H));
+			float NoV = saturate(dot(N, V));
+			float NoL = saturate(dot(N, L));
+			float NoH = saturate(dot(N, H));
 			float VoH = dot(V, H);
 			float VoL = dot(V, L);
 
@@ -461,7 +463,10 @@ void main() {
 #if LIGHT_MAP == 1
 	outcol.rgb = render_light_bound(outcol.rgb, uv1, wornor, blopos);
 #endif
+
 	FragColor = outcol;
 
 #endif
 }
+
+#endif //ORIGIN_SHADER

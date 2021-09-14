@@ -1,7 +1,10 @@
 #version 300 es
 #pragma optimize(on)
 
+#ifdef ORIGIN_SHADER
+
 precision highp float;
+precision highp int;
 
 #include "shaderfunction.lin"
 
@@ -50,3 +53,5 @@ void main() {
 
 	FragColor = outcol;
 }
+
+#endif //ORIGIN_SHADER
