@@ -464,6 +464,8 @@ void main() {
 	outcol.rgb = render_light_bound(outcol.rgb, uv1, wornor, blopos);
 #endif
 
+	//outcol.rgb = vec3(valnoi_2D(chupos.xz * 10.0));
+
 	FragColor = outcol;
 
 #endif
