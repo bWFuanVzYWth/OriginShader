@@ -2,17 +2,17 @@
     "format_version": 2,
     "header": {
         "description": "基于物理的渲染",
-        "name": "Origin Shader 3.5.5",
-        "uuid": "0575c61f-a5da-4b7f-9961-afda29080335",
-        "version": [ 3, 5, 5 ],
+        "name": "Origin Shader 3.5.6",
+        "uuid": "0575c61f-a5da-4b7f-9961-afda29080336",
+        "version": [ 3, 5, 6 ],
         "min_engine_version": [ 1, 16, 100 ]
     },
     "modules": [
         {
             "description": "",
             "type": "resources",
-            "uuid": "53644fac-a276-42e5-843f-b3c6f1690335",
-            "version": [ 3, 5, 5 ]
+            "uuid": "53644fac-a276-42e5-843f-b3c6f1690336",
+            "version": [ 3, 5, 6 ]
         }
     ]
 }

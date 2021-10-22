@@ -1,3 +1,9 @@
+//translation credit: discord@SSRB_Lämbō#7360
+
+//一部分翻譯來自16/10/2021 渣翻輕拍， 若有出入以中文為準
+//part of the translation comes from a random fan on 16/10/2021 should there is any discrepancy pls refer to the Chinese version
+
+
 
 //Origin Shader
 //基础选项 Basic options
@@ -11,7 +17,7 @@
 
 
 #define SUNCOL vec3(1.0000, 1.0000, 1.0000)
-#define SUNLIGHT_A 15.0
+#define SUNLIGHT_A 14.0
 //R G B 太空中阳光的颜色
 //R G B Color of sunlight in space
 //A 阳光的亮度
@@ -25,7 +31,7 @@
 //A Luminance of the moonlight
 
 #define POICOL vec3(1.0000, 0.5155, 0.2087)
-#define POILIGHT_A 15.0
+#define POILIGHT_A 14.0
 //R G B 灯光的颜色
 //R G B Color of lamplight
 //A 灯光的亮度
@@ -44,9 +50,8 @@
 
 
 
-//#define LATITUDE 0.9
 #define LATITUDE 0.2618
-//30 deg
+//15 deg
 
 #define SUN_R 0.009512
 //太阳的半径，单位为弧度
@@ -54,30 +59,37 @@
 
 #define SOFTSHADOW 3.0
 //软阴影宽度
+//soft shadow width
 
 #define FAST_SOFTSHADOW 1
 //更快的软阴影
+//faster but slightly shortcoming soft shadow
 
 
-
-#define FAST_BSDF 1
+#define FAST_BSDF 0
 //更快但效果略差的BRDF
+//faster but slightly shortcoming BRDF
 
 #define USE_NORMAL_MAP 1
 //1 使用自动生成的法线
+//1 use auto generated normal
 //0 禁用自动生成的法线
+//0 ban use of auto generated normal
 
 #define NORMAL_MAP_FIX 1
 //修复法线宽度不一致的问题
+//fixing the issue of normals’ uneven width
 
 #define NORMAL_MAP_STRENGTH 1.0
 //法线映射强度
+//strength of normal mapping
 
 #define NORMAL_MAP_W 1.5
 //法线映射宽度
+//width of normal mapping
 
 #define FLUORESCENCE 0.5
-//材质荧光强度
+//材质默认荧光强度
 //Default fluorescence
 
 #define ROUGHNESS 1.0
@@ -86,11 +98,11 @@
 
 #define ROUGHNESS_0 0.05
 //光滑表面反射阳光的粗糙度
+//roughness of sunlight reflected by smooth surface
 
 #define HARDCODE_MATEL 0.8
 //金属的F0在材质颜色和pbr硬编码颜色间插值
-
-
+//metal’s F0 interpolation between colour of material and pbr hard coded colour
 
 #define TONEMAP 2
 //0 None
@@ -102,9 +114,9 @@
 //Global brightness
 
 
-
 #define FOG_A 16.0
 //能见度，数值越大雾越淡
+//visibility, greater the value less the foggy
 
 
 
@@ -113,11 +125,11 @@
 //太空模式默认海拔，用于大气层建模，单位为km
 //The default altitude of space mode is used for atmosphere modeling, in km
 
-#define SAMNUM 4.0
+#define SAMNUM 3.0
 //太空模式中阳光方向的采样数
 //Sampling number of sunlight direction in space mode
 
-#define MARNUM 8.0
+#define MARNUM 9.0
 //太空模式中视线方向的基础采样数
 //将由程序在设置的基础上自动调整
 //The number of basic samples in line of sight direction in space mode.
@@ -132,7 +144,7 @@
 //物理天空中阳光方向的采样数
 //Sampling number of sunlight direction in sky mode
 
-#define MARNUM 4.0
+#define MARNUM 6.0
 //物理天空中视线方向的基础采样数
 //将由程序在设置的基础上自动调整
 //The number of basic samples in line of sight direction in sky mode.
@@ -142,10 +154,10 @@
 
 
 
-#define O3 (0.006 * vec3(3.426, 8.298, 0.356) * 0.06)
+#define O3 (0.008 * vec3(3.426, 8.298, 0.356) * 0.06)
 //臭氧浓度
 //Ozone
-#define LR (0.006 * vec3(0.580, 1.350, 3.310))
+#define LR (0.007 * vec3(0.580, 1.350, 3.310))
 //瑞利散射强度
 //Rayleigh scattering
 #define LM (0.015 * vec3(2.000, 2.000, 2.000))
@@ -154,14 +166,14 @@
 
 
 
-#define CLOUD_COVERAGE 0.65
+#define CLOUD_COVERAGE 0.7
 //云覆盖率，1.0为晴天
 //Cloud coverage，1.0 for sunny
 
 #define CLOUD_TYPE 3
-//1 无云
-//2 方块云(快速)
-//3 方块云(质量)
+//1 无云  //off
+//2 方块云(快速)  //fast
+//3 方块云(质量)  //fancy
 
 #define CLOINTNUM  8.0
 #define CLOSAMNUM  3.0
@@ -182,28 +194,31 @@
 
 
 
-#define USE_WATER_TEXTURE 1
+#define USE_WATER_TEXTURE 0
 //使用原版水面材质
 //Use vanilla water surface material
 
 #define WATER_TYPE 2
-//1 静水
-//2 小波浪
+//1 静水  //still
+//2 小波浪  //small waves
 
-#define MILKY_WAY_LIGHT 0.1
+#define MILKY_WAY_LIGHT 0.05
 //银河亮度
+//luminance of the milky way
 
 #define MILKY_WAY_DEC_X 0.65
 #define MILKY_WAY_DEC_Y 0.65
 #define MILKY_WAY_DEC_Z 0.65
 //银河旋转角，改变月亮和银河的相对位置，随便填
+//angle of rotation for milky way, changes relative position between the Moon and the milky way, any value will do
 
 #define STAR_LIGHT 10.0
 //星星亮度倍率，在银河亮度的基础上提升星星亮度
+//multiple ratio of light intensity for stars, enhance stars’ luminance base on the milky way’s
 
 #define CHUNK_ANIMATION 1
 //区块加载动画
-
+//chunk loading animation
 
 
 
@@ -215,25 +230,34 @@
 
 #define REDSTONE_POWER 1
 //0 关闭红石能量显示
+//0 switch off redstone energy display
 //1 启用红石能量显示
+//1 uses redstone energy display
 
 #define LIGHT_MAP 0
 //0 关闭亮度显示
+//0 switch off light intensity display
 //1 显示亮度分界线
+//1 show border of light intensity
 //2 显示亮度数值（无效）
+//2 show light intensity value (not working)
 
 #define CHUNK_BOUND 0
 //0 关闭区块边界线
+//0 switch off chunk border
 //1 显示区块边界线
+//1 show chunk border
 
 #define CHUNK_BOUND_COLOR_X vec4(1.0, 0.0, 0.0, 0.5)
 #define CHUNK_BOUND_COLOR_Y vec4(0.0, 1.0, 0.0, 0.5)
 #define CHUNK_BOUND_COLOR_Z vec4(0.0, 0.0, 1.0, 0.5)
 #define CHUNK_BOUND_COLOR_O vec4(1.0, 1.0, 1.0, 0.2)
 //区块边界线的颜色
+//colour of chunk border
 
 #define LIGHT_BOUND_COLOR vec4(1.0, 0.5, 0.0, 0.5)
 //亮度边界线的颜色
+//colour for border of light intensity
 
 
 
@@ -259,9 +283,14 @@
 
 
 //开发者选项
+//developer option
 #define WHITEWORLD 0
 //整个世界变成纯白，用于观察光照
+//whole world turns into pure white, use this to observe light rays
 
+#define ACHROMATOPSIA 0
+//色盲模式（黑白）
+//achromatopsia(black & white)
 
 
 #define HASH21_TYPE 1
@@ -271,6 +300,7 @@
 
 
 //效果选项
+//effect option
 #define PM_AIR vec3(0.10, 0.80, 0.10)
 #define G_AIR vec3(-0.15, 0.75, 0.99)
 
@@ -280,6 +310,7 @@
 #define PM_CLOUD vec3(0.10, 0.75, 0.15)
 #define G_CLOUD vec3(-0.15, 0.05, 0.95)
 //乱七八糟的相位函数参数，自己看着调吧我放弃解释了
+//mess of phase function’s values, trial them as you like, I give up explaining
 
 
 
@@ -287,44 +318,63 @@
 #define CLOUD_H (1.0 / 3.0)
 #define CLOUD_Y (3.0)
 //云的宽度，单位km
+//cloud width, in km
 //云的厚度，单位km
+//cloud thickness, in km
 //云的底部所在的海拔，单位km
+//altitude of the bottom of cloud, in km
+
+#define CLOSIZ vec3(CLOUD_W, CLOUD_H, CLOUD_W)
 
 
 
 #define RO (LR + O3)
 //大气散射衰减系数，除非需要艺术化效果通常不应更改
+//atmospheric scattering transmittance, usually should not be modify unless for aesthetic effect
+
 #define HR 8.0
 //瑞利散射放缩高度，单位为km
+//Rayleigh scattering scaling height, in km
+
 #define HM 1.2
 //米散射放缩高度，单位为km
+//Mie scattering scaling height, in km
 
 #define EARTH_R 6371.0
 //地球海平面所在半径，用于大气层建模，单位为km
+//sea surface’s location on Earth’s radius, for atmospheric modeling, in km
 
 #define EARTH_r (EARTH_R - 0.5)
 //地球实际地面的半径，用于大气层建模，单位为km
+//radius of Earth’s actual surface, for atmospheric modeling, in km
 //应比海平面所在半径略小，并调整到天际线分割尽量不明显
+//should slightly smaller than EARTH_R, adjust to minimize the parting of skyline
 
 #define SUN_RISE_Y -0.04
 //昼夜切换时的太阳高度，应调整至日月过渡尽量平滑
+//Sun’s height when dusk and dawn, adjust to smoothen the transition between Sun and Moon
 
 #define FAST_MATH 0
 //使用更快但是精度更低的数学函数（实验性选项，默认关闭）
+//uses faster but less accurate math functions (experimental option, off by default)
 //请注意这个选项并不能从根本上提升性能，甚至可能导致某些设备出现错误
+//please note that this option do not enhance the performance fundamentally, and it may cause some device to malfunction
 
 
 
 #define EARTH_SHADOW 1
 //地球遮挡
+//Earth obscure
 
 
 
 #define MOBILE 1
 //是否在手机上运行
+//running on a phone?
 
 #define TRY_MCPE_NETEASE 0
 //尝试使用仅能在网易版使用的精确时间模式
+//try to use the time accurate mode that only available on Netease version
 
 
 
@@ -340,17 +390,21 @@
 
 #define FAST_PERLIN 1
 //仅使用一阶导平滑的perlin noise
+//only use Perlin noise smoothed by first derivative
 #define FAST_VALUE 1
 //仅使用一阶导平滑的的value noise
+//only use value noise smoothed by first derivative
 #define FAST_VORO 0
 //仅使用四晶格采样的voronoi noise
+//only use Voronoi noise sampling from four dimensional lattice
 
 
 
 #define F0          vec3(0.040)
 #define F0_LEAVES   vec3(0.020)
-#define F0_WATER    vec3(0.020)
+#define F0_WATER    vec3(0.040) //vec3(0.020)
 #define F0_GLASS    vec3(0.035)
 #define F0_DIAMOND  vec3(0.172)
 //硬编码常用材质F0，除非需要艺术化效果通常不应更改
+//material F0 commonly use in hard coding, usually should not be modify unless for aesthetic effect
 //F0 = ((n1-n2)/(n1+n2))^2, n(air) = 1.00029

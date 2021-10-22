@@ -60,6 +60,8 @@ void main() {
 	L = M_sky[0];
 	bool day = L.y > SUN_RISE_Y;
 	L = day ? L : -L;
+	L.x += 0.00001; //fix cloud turn black at daytime 6000
+	L = normalize(L);
 
 	isday = float(day);
 
@@ -76,6 +78,8 @@ void main() {
 	L = M_sky[0];
 	bool day = L.y > SUN_RISE_Y;
 	L = day ? L : -L;
+	L.x += 0.00001; //fix cloud turn black at daytime 6000
+	L = normalize(L);
 
 	isday = float(day);
 
@@ -88,10 +92,12 @@ void main() {
 
 	vec4 inpos = POSITION;
 
+	//银河系，实际上是天空盒的旋转矩阵
 	const mat3 M_mkw_x = mat3(vec3(1.0, 0.0, 0.0), vec3(0.0, cos(MILKY_WAY_DEC_X), sin(MILKY_WAY_DEC_X)), vec3(0.0, -sin(MILKY_WAY_DEC_X), cos(MILKY_WAY_DEC_X)));
 	const mat3 M_mkw_y = mat3(vec3(cos(MILKY_WAY_DEC_Y), 0.0, sin(MILKY_WAY_DEC_Y)), vec3(0.0, 1.0, 0.0), vec3(-sin(MILKY_WAY_DEC_Y), 0.0, cos(MILKY_WAY_DEC_Y)));
 	const mat3 M_mkw_z = mat3(vec3(cos(MILKY_WAY_DEC_Z), sin(MILKY_WAY_DEC_Z), 0.0), vec3(-sin(MILKY_WAY_DEC_Z), cos(MILKY_WAY_DEC_Z), 0.0), vec3(0.0, 0.0, 1.0));
 	const mat3 M_mkw = M_mkw_z * M_mkw_y * M_mkw_x;
+
 	inpos.xyz = M_mkw * inpos.xyz;
 	inpos.xyz = transpose(M_time) * inpos.xyz;
 	inpos.xyz = M_sun * inpos.xyz;

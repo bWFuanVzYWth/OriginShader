@@ -53,7 +53,7 @@ void main() {
 	vec3 wornor;
 
 #if defined(ALPHA_TEST) && !defined(SEASONS) && !defined(SEASONS_FAR) && !defined(BLEND)
-	if(col.b == 0.0) { //redstone_wire
+	if(col.b == 0.0) { // redstone_wire
 		vec4 texcol_ = texture(TEXTURE_0, uv0);
 
 #if defined(ALPHA_TEST) && !defined(SEASONS_FAR)
@@ -71,10 +71,11 @@ void main() {
 
 	{
 
-#if !defined(SEASONS_FAR) && !defined(BLEND) //远处树叶不会进行alpha test
-#ifndef SEASONS
+//#if !defined(SEASONS_FAR) && !defined(BLEND) && !defined(ALPHA_TEST)
+#if !defined(BLEND)
+#if !defined(SEASONS)
 		if(col.a < 0.001)
-#endif //leaves
+#endif // leaves
 		{
 			vec4 ddxpos = dFdx(chupos);
 			vec4 ddypos = dFdy(chupos);
@@ -111,7 +112,7 @@ void main() {
 			vec3 V = normalize(-worpos.xyz);
 			vec3 H = normalize(V + L);
 
-			//normal mapping会产生非法负值，钳制即可
+			// normal mapping会产生非法负值，钳制即可
 			float NoV = saturate(dot(N, V));
 			float NoL = saturate(dot(N, L));
 			float NoH = saturate(dot(N, H));
@@ -137,13 +138,13 @@ void main() {
 			vec3 ligsum = sunref + poiref + envref;
 			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
 		}
-#ifndef SEASONS
+#if !defined(SEASONS)
 		else
 #endif
 #endif
 
 #if !defined(ALPHA_TEST) && !defined(SEASONS) && !defined(SEASONS_FAR) && defined(BLEND)
-		if(col.a < 0.999) { //water
+		if(col.a < 0.999) { // water
 			vec4 ddxpos = dFdx(chupos);
 			vec4 ddypos = dFdy(chupos);
 			vec2 ddxuv0 = dFdx(uv0);
@@ -161,7 +162,7 @@ void main() {
 			vec3 V = normalize(-worpos.xyz);
 			vec3 H = normalize(V + L);
 
-			//normal mapping会产生非法负值，钳制即可
+			// normal mapping会产生非法负值，钳制即可
 			float NoV = saturate(dot(N, V));
 			float NoL = saturate(dot(N, L));
 			float NoH = saturate(dot(N, H));
@@ -175,7 +176,7 @@ void main() {
 #if USE_WATER_TEXTURE
 			vec3 BaseColor = gamma2line(texcol_.rgb * col.rgb);
 #else
-			vec3 BaseColor = gamma2line(col.rgb);
+			vec3 BaseColor = gamma2line(0.6 * normalize(col.rgb));
 #endif
 
 			vec4 thr = vec4(ThresholdMap16(gl_FragCoord.xy));
@@ -199,7 +200,7 @@ void main() {
 
 #if !defined(SEASONS) && !defined(SEASONS_FAR)
 		{
-#if defined(ALPHA_TEST) //tallgrass
+#if defined(ALPHA_TEST) // tallgrass
 			vec4 ddxpos = dFdx(chupos);
 			vec4 ddypos = dFdy(chupos);
 			vec2 ddxuv0 = dFdx(uv0);
@@ -233,7 +234,7 @@ void main() {
 			vec3 V = normalize(-worpos.xyz);
 			vec3 H = normalize(V + L);
 
-			//normal mapping会产生非法负值，钳制即可
+			// normal mapping会产生非法负值，钳制即可
 			float NoV = saturate(dot(N, V));
 			float NoL = saturate(dot(N, L));
 			float NoH = saturate(dot(N, H));
@@ -260,7 +261,7 @@ void main() {
 			vec3 ligsum = sunref + poiref + envref;
 			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
 
-#elif defined(BLEND) //transparent
+#elif defined(BLEND) // transparent
 			vec4 ddxpos = dFdx(chupos);
 			vec4 ddypos = dFdy(chupos);
 			vec2 ddxuv0 = dFdx(uv0);
@@ -294,7 +295,7 @@ void main() {
 			vec3 V = normalize(-worpos.xyz);
 			vec3 H = normalize(V + L);
 
-			//normal mapping会产生非法负值，钳制即可
+			// normal mapping会产生非法负值，钳制即可
 			float NoV = saturate(dot(N, V));
 			float NoL = saturate(dot(N, L));
 			float NoH = saturate(dot(N, H));
@@ -327,7 +328,7 @@ void main() {
 			vec3 ligsum = sunspe + envref + skyref + sunsca + poisca;
 			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
 
-#else //default
+#else // default
 			vec4 ddxpos = dFdx(chupos);
 			vec4 ddypos = dFdy(chupos);
 			vec2 ddxuv0 = dFdx(uv0);
@@ -365,7 +366,7 @@ void main() {
 			vec3 V = normalize(-worpos.xyz);
 			vec3 H = normalize(V + L);
 
-			//normal mapping会产生非法负值，钳制即可
+			// normal mapping会产生非法负值，钳制即可
 			float NoV = saturate(dot(N, V));
 			float NoL = saturate(dot(N, L));
 			float NoH = saturate(dot(N, H));
@@ -399,7 +400,7 @@ void main() {
 				if(issmooth) {
 					vec4 thr = vec4(ThresholdMap16(gl_FragCoord.xy));
 
-					vec3 sunspe = D_GGX(ROUGHNESS_0, NoH) * Vis_Smith(ROUGHNESS_0, NoV, NoL) * F_Fresnel(F0_MATEL, VoH);
+					vec3 sunspe = Specular_BRDF(F0_MATEL, ROUGHNESS_0, NoV, NoL, NoH, VoH);
 
 					vec3 sunref = sunlig * sunspe * NoL;
 					vec3 poiref = getpoilig(uv1) * Diffuse_Lambert(GRAY) * F0_MATEL;
@@ -407,7 +408,7 @@ void main() {
 
 					ligsum += sunref + poiref + envref;
 				} else {
-					vec3 sunspe = D_GGX(ROUGHNESS, NoH) * Vis_Smith(ROUGHNESS, NoV, NoL) * F_Fresnel(F0_MATEL, VoH);
+					vec3 sunspe = Specular_BRDF(F0_MATEL, ROUGHNESS_0, NoV, NoL, NoH, VoH);
 
 					vec3 sunref = sunlig * sunspe * NoL;
 					vec3 poiref = getpoilig(uv1) * Diffuse_Lambert(GRAY) * F0_MATEL;
@@ -464,11 +465,17 @@ void main() {
 	outcol.rgb = render_light_bound(outcol.rgb, uv1, wornor, blopos);
 #endif
 
-	//outcol.rgb = vec3(valnoi_2D(chupos.xz * 10.0));
+#if ACHROMATOPSIA
+	outcol.rgb = vec3(srgb2y(outcol.rgb));
+#endif
+
+#ifdef ALPHA_TO_COVERAGE
+	outcol.r = 1.0;
+#endif
 
 	FragColor = outcol;
 
 #endif
 }
 
-#endif //ORIGIN_SHADER
+#endif // ORIGIN_SHADER

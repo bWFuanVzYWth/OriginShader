@@ -103,12 +103,12 @@ void main() {
 	setfog(outsca, insca, getearpos(campos, worpos), campos, orisunlig, L, uv1);
 	envlig = getenvlig(uv1, grosunlig, orisunlig, campos, L, varcol.a);
 
+// TODO 改进判定条件
+#if !defined(ALPHA_TEST) || defined(SEASONS)
 	closunlig = getsunlig(clocampos, orisunlig, L);
 	closkylum = physicsky(vec3(0.0), clocampos, vec3(0.0, 0.8, 0.6), orisunlig, L);
-
-#if !defined(FOG) && 0
-	varcol.rgb += FOG_COLOR.rgb * 0.000001;
 #endif
+
 #endif
 }
 
