@@ -16,15 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//不应修改的数学常量，物理常量等
-#define AUTHOR linlin
-#define MATH_PI 3.141592653589793
-#define MATH_E 2.718281828459045
-#define MATH_PHI 1.618033988749895
-#define MATH_Y 0.577215664901533
-#define GAMMA 2.2
-#define RGB vec3(0.7000, 0.5461, 0.4358)
-
 #include "Users/Set.txt"
 
 //math
@@ -649,7 +640,7 @@ vec3 scattering_BSDF(vec3 BaseColor) {
 
 vec3 Diffuse_BRDF(vec3 BaseColor, float Roughness, float NoV, float NoL, float VoH, float VoL) {
 #if FAST_BSDF
-	return Diffuse_Lambert(vec3 BaseColor);
+	return Diffuse_Lambert(BaseColor);
 #else
 	return Diffuse_Gotanda(BaseColor, Roughness, NoV, NoL, VoH, VoL);
 #endif
@@ -1061,6 +1052,8 @@ float closamsun(vec3 sampos, vec3 aabbsam, vec3 sunvec) {
 	return samsum;
 }
 
+#if CLOUD_TYPE == 2
+
 vec3 cloudrender_fast(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec, vec3 skylum, float gametime) {
 	vec3 marpos = campos;
 	marpos.xz += gametime * CLOUD_SPEED;
@@ -1078,6 +1071,8 @@ vec3 cloudrender_fast(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 s
 
 	return skylig + (1.0 / (4.0 * MATH_PI)) * marsum * sunlig;
 }
+
+#elif CLOUD_TYPE == 3
 
 vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec, vec3 skylum, float gametime) {
 	vec3 marpos = campos;
@@ -1131,6 +1126,8 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
 
 	return insca + outsca + skylum;
 }
+
+#endif
 
 //origin shader light system
 
