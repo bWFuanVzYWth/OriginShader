@@ -21,6 +21,7 @@
 //math
 
 //常用的快速幂，比pow的效率更高
+//Commonly used fast power, more efficient than pow
 float pow3_2(float x) {
 	return x * sqrt(x);
 }
@@ -68,6 +69,7 @@ float pow5(float x) {
 }
 
 //快速幂结束
+//Fast end of power
 
 bool equ3(vec3 v) {
 	//return abs(v.x-v.y) < 0.000002 && abs(v.y-v.z) < 0.000002;
@@ -79,6 +81,7 @@ float saturate(float x) {
 }
 
 //几乎用不到，大部分情况都是已经被归一化的向量求点积
+//Almost useless, in most cases, the vector has been normalized to find the dot product
 float veccos(vec3 v1, vec3 v2) {
 	//return dot(v1, v2) / (length(v1) * length(v2));
 	return dot(v1, v2) * inversesqrt(dot(v1, v1) * dot(v2, v2));
@@ -106,6 +109,7 @@ float erf(float x) {
 }
 
 //逆矩阵，开销极大，慎用
+//Inverse matrix, very expensive, use with caution
 
 mat3 inverse_mat3(mat3 m) {
 	float Determinant = m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2]) - m[1][0] * (m[0][1] * m[2][2] - m[2][1] * m[0][2]) + m[2][0] * (m[0][1] * m[1][2] - m[1][1] * m[0][2]);
@@ -185,6 +189,7 @@ mat4 inverse_mat4(mat4 m) {
 
 vec4 maraabb(vec3 o, vec3 v, vec3 a, vec3 b) {
 #if FAST_MATH //这种写法会造成噪点和精度丢失
+	      //This way of writing will cause noise and loss of precision
 	vec3 t_0 = 1.0 / v;
 	vec3 t_1 = -o * t_0;
 	vec3 ta = a * t_0 + t_1;
@@ -204,7 +209,9 @@ vec4 maraabb(vec3 o, vec3 v, vec3 a, vec3 b) {
 }
 
 //完整的射线与球求交
+//Complete ray and ball intersection
 //大部分时候都可以预计算中间变量并简化逻辑，此函数仅用于理解
+//Most of the time, intermediate variables can be pre-calculated and the logic simplified, this function is only for understanding
 float intraybal(float r, vec3 p, vec3 d) {
 	float r2 = r * r;
 	float l = dot(d, -p);
@@ -215,6 +222,7 @@ float intraybal(float r, vec3 p, vec3 d) {
 }
 
 //球心在原点
+//The center of the ball is at the origin
 float intraybal(float R2, float r2, float PoD) {
 	float t = PoD * PoD + R2;
 	float q = sqrt(t - r2);
@@ -222,12 +230,14 @@ float intraybal(float R2, float r2, float PoD) {
 }
 
 //球心在原点且只求解距离
+//The center of the sphere is at the origin and only the distance is solved
 float lenraybal(float R2, float r2, float PoD) {
 	float q = sqrt(PoD * PoD + R2 - r2);
 	return (R2 > r2 ? q : -q) + PoD;
 }
 
 //球心在原点且只进行相交测试
+//The center of the sphere is at the origin and only the intersection test is performed
 bool nohitraybal(float R2, float r2, float PoD) {
 	return ((r2 > R2 && PoD < 0.0) || PoD * PoD + R2 < r2);
 }
@@ -299,6 +309,7 @@ vec3 lig2col(vec3 lig) {
 }
 
 //使用前注意区分色彩空间
+//Pay attention to distinguish the color space before use
 
 float srgb2y(vec3 col) {
 	return dot(col, vec3(0.299, 0.587, 0.114));
@@ -310,6 +321,7 @@ float lrgb2y(vec3 col) {
 
 //hash, noise
 //TODO 检查是否有更好的写法
+//Check if there is a better way
 float ThresholdMap16(vec2 p) {
 	//https://en.wikipedia.org/wiki/Ordered_dithering
 	const mat4 TM = mat4(0.0000, 0.5000, 0.1250, 0.5250, 0.7500, 0.2500, 0.8750, 0.3750, 0.1875, 0.6875, 0.0625, 0.5625, 0.9375, 0.4375, 0.8125, 0.3125);
@@ -329,6 +341,7 @@ vec2 hash22(vec2 p) {
 }
 
 //有些硬件的三角函数计算特别快，在那些硬件上sin_hash性能更高
+//The trigonometric function calculation of some hardware is extremely fast, and the performance of sin_hash is higher on those hardware
 float hash21(vec2 p) {
 #if HASH21_TYPE == 1
 //2 fract    3 mad    4 *
@@ -393,6 +406,7 @@ float valnoi_2D(vec2 p) {
 	vec4 dp = vec4(0.0, 0.0, 1.0, 1.0) - pf.xyxy;
 
 	//内联hash，两种写法在算法上等价
+	//Inline hash, the two writing methods are equivalent in algorithm
 	//vec4 d = vec4(hash21(pi.zw), hash21(pi.xw), hash21(pi.xy), hash21(pi.zy));
 
 	vec4 t = (1.0 / 4093.0) * pi + vec4(0.25, 0.0, 0.25, 0.0);
@@ -418,6 +432,7 @@ vec2 valpar_2D(vec2 p) {
 	vec4 dp = vec4(0.0, 0.0, 1.0, 1.0) - pf.xyxy;
 
 	//内联hash，两种写法在算法上等价
+	//Inline hash, the two writing methods are equivalent in algorithm
 	//vec4 d = vec4(hash21(pi.zw), hash21(pi.xw), hash21(pi.xy), hash21(pi.zy));
 
 	vec4 t = (1.0 / 4093.0) * pi + vec4(0.25, 0.0, 0.25, 0.0);
@@ -463,6 +478,7 @@ float voro_2D(vec2 p) {
 
 float fogtime(vec4 fogcol) {
 	//三次多项式拟合，四次多项式拟合曲线存在明显突出故不使用
+	//The third-order polynomial fitting and the fourth-order polynomial fitting curve are obviously prominent, so do not use
 	//return fogcol.g > 0.213101 ? 1.0 : (((349.305545 * fogcol.g - 159.858192) * fogcol.g + 30.557216) * fogcol.g - 1.628452);
 	return clamp(((349.305545 * fogcol.g - 159.858192) * fogcol.g + 30.557216) * fogcol.g - 1.628452, -1.0, 1.0);
 }
@@ -473,10 +489,12 @@ float uv1time(float r1) {
 
 float curtime(vec4 curcol, vec4 fogcol) {
 	//原始数据线性变化，无需拟合即可解得精确值
+	//The original data changes linearly, and the exact value can be solved without fitting
 	return 1.812780 * (curcol.b / fogcol.a) - 0.918842;
 }
 
 //对colormap建模在rgb空间内与color向量求交，精确计算并分离出方块暗角浓度
+//Model the colormap to intersect the color vector in the rgb space, accurately calculate and separate the square vignetting density
 float getleaao(vec3 c) {
 	const vec3 O = vec3(0.682352941176471, 0.643137254901961, 0.164705882352941);
 	const vec3 N = vec3(0.195996912842436, 0.978673548072766, -0.061508507207520);
@@ -553,6 +571,7 @@ float uv1y2lig(float uv1y) {
 }
 
 //TODO 目前还不能进行侧面检测，还需要进一步减少误判
+//At present, side detection cannot be performed, and misjudgments need to be further reduced
 bool isunderwater(vec3 n, vec2 uv1, vec4 cp, vec4 tc, vec4 vc) {
 	return n.y > 0.9											//normal
 	&& uv1.y < 0.9										//sunlight
@@ -751,6 +770,7 @@ vec3 getBRDF(vec3 BaseColor, vec3 SpecularColor, float Roughness, float NoV, flo
 }
 
 // TODO 查看labPBR文档，使用标准内的数值
+//Check the labPBR document and use the values ​​in the standard
 vec3 getmetalF0(int c) {
 	const mat4 F0_METAL = mat4(vec4(1.000, 0.782, 0.344, 0.0),	//金
 	vec4(0.972, 0.960, 0.915, 0.0),	//银
@@ -763,6 +783,7 @@ vec3 getmetalF0(int c) {
 //atmosphere
 
 //大部分时候都可以手动内联并简化逻辑，此函数仅用于理解
+//Most of the time, you can manually inline and simplify the logic. This function is only for understanding
 vec2 airden(vec3 pos) {
 	float h = length(pos) - EARTH_R;
 	return exp(h * (1.0 / vec2(-HR, -HM)));
@@ -786,6 +807,7 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
 	vec2 adssum = vec2(0.0);
 
 	//仅用到瑞利散射
+	//Rayleigh scattering only
 	float mpx = exp(length(sampos + saturate(PoL) * sunvec) * (1.0 / -HR) + (EARTH_R / HR));
 
 	float em = mpx - t1.x;
@@ -812,6 +834,7 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
 	}
 
 	//延迟常量计算
+	//Delay constant calculation
 	return adssum * 0.5;
 }
 
@@ -843,6 +866,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 #endif
 	{
 		//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
+		/The line-of-sight stepping distance of the zeroth sampling point is 0, and only the optical path from space to the camera along the direction of sunlight is calculated.
 		vec2 adorigin = atmads(marpos, sunvec, PoL, t1);
 		vec3 expodorigin = exp((-RO) * adorigin.x + (-LM) * adorigin.y);
 
@@ -892,6 +916,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 
 #if PLANET_ATMOSPHERE
 		//如果直接用EARTH_R会有奇怪的条纹
+		//If you use EARTH_R directly, there will be strange stripes
 		if(nohitraybal(R2_99995, t1.z, PoL))
 #endif
 		{
@@ -911,6 +936,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 		}
 	}
 	//延迟常量计算
+	//Delay constant calculation
 	marsumr *= 0.5;
 	marsumm *= 0.5;
 
@@ -920,7 +946,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 
 	vec3 insca = orisunlig * (pr * LR * marsumr + pm * LM * marsumm);
 #if EARTH_SHADOW
-	skylig = nohitflag ? skylig : vec3(0.0); //地球遮挡
+	skylig = nohitflag ? skylig : vec3(0.0); //地球遮挡 Earth occlusion
 #endif
 	vec3 outsca = skylig * exp((-RO) * admsum.x + (-LM) * admsum.y);
 
@@ -951,6 +977,7 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 	vec3 expodm1 = vec3(0.0);
 
 	//第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
+	//The line-of-sight stepping distance of the zeroth sampling point is 0, and only the optical path from space to the camera along the direction of sunlight is calculated.
 	vec2 adorigin = atmads(marpos, sunvec, PoL, vec3(adm1, r2));
 	vec3 expodorigin = exp((-RO) * adorigin.x + (-LM) * adorigin.y);
 
@@ -967,7 +994,7 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 
 		adm0 = adm1;
 		adm1 = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
-		admsum += (adm0 + adm1) * 0.5 * l; //不能延迟常量计算
+		admsum += (adm0 + adm1) * 0.5 * l; //不能延迟常量计算  Can't delay constant calculation
 
 		vec2 adssum = atmads(marpos, sunvec, PoL, vec3(adm1, r2));
 
@@ -985,6 +1012,7 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 	}
 
 	//延迟常量计算
+	//Delay constant calculation
 	marsumr *= 0.5;
 	marsumm *= 0.5;
 
@@ -1003,6 +1031,7 @@ vec3 getsunlig(vec3 marpos, vec3 orisunlig, vec3 sunvec) {
 	float PoL = dot(marpos, -sunvec);
 
 	//不考虑地球遮挡
+	//Do not consider the earth's occlusion
 	vec2 adm = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
 	vec2 adorigin = atmads(marpos, sunvec, PoL, vec3(adm, r2));
 	return max(vec3(0.0), orisunlig * exp((-RO) * adorigin.x + (-LM) * adorigin.y));
@@ -1012,13 +1041,13 @@ vec3 physicsun(vec3 skylig, vec3 orisunlig, vec3 sunvec, vec3 skyvec, const floa
 	//http://www.physics.hmc.edu/faculty/esin/a101/limbdarkening.pdf
 	const vec3 u = vec3(1.0, 1.0, 1.0);
 	const vec3 a = vec3(0.397, 0.503, 0.652);
-	/*const*/ float s = 2.0 * MATH_PI * (1.0 - cos(r)); //const会无法通过编译
+	/*const*/ float s = 2.0 * MATH_PI * (1.0 - cos(r)); //const会无法通过编译   const will fail to compile
 
 	float theta = acos(dot(skyvec, sunvec));
 
 	if(theta < r) {
 		vec3 lig = orisunlig / s;
-		//vec3 lig = orisunlig * 5.0; //物理不正确，但是好看
+		//vec3 lig = orisunlig * 5.0; //物理不正确，但是好看   The physics is not correct, but it looks good
 		float mu = sqrt(1.0 - pow2(theta / r));
 		vec3 factor = u * pow(vec3(mu), a) + (1.0 - u);
 
@@ -1110,7 +1139,7 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
 
 				marsum += l;
 			}
-			//延迟常量计算
+			//延迟常量计算   Delay constant calculation
 			expsum += s * l * (1.0 / CLOUD_LM);
 		}
 
@@ -1132,6 +1161,7 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
 //origin shader light system
 
 //都是常量
+//Are all constants
 #define SUNLIG (gamma2line(SUNCOL) * SUNLIGHT_A)
 #define MOOLIG (gamma2line(MOOCOL) * MOOLIGHT_A)
 #define POILIG (gamma2line(POICOL) * POILIGHT_A)
@@ -1180,7 +1210,7 @@ vec3 getearpos(vec3 campos, vec4 worpos) {
 
 void setfog(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 orisunlig, vec3 sunvec, vec2 uv1) {
 	atmsca(outsca, insca, stapos, marpos, sunvec, PM_FOG, G_FOG);
-	insca *= uv1.y; //修复水面看水下的雾计算错误
+	insca *= uv1.y; //修复水面看水下的雾计算错误   Fixed an error in the calculation of the fog when viewed from the surface of the water
 }
 
 vec3 skyfog(vec3 skylig, vec3 stapos, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunvec) {
@@ -1191,6 +1221,7 @@ vec3 skyfog(vec3 skylig, vec3 stapos, vec3 marpos, vec3 marvec, vec3 orisunlig, 
 }
 
 // TODO 传参采样次数
+//Pass parameter sampling times
 vec3 skyrender(vec3 skylig, vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunlig, vec3 skylum, vec3 sunvec, vec4 thr, float gametime) {
 	const float R2 = EARTH_r * EARTH_r;
 	const float R2_Y = (EARTH_R + CLOUD_Y) * (EARTH_R + CLOUD_Y);
@@ -1315,7 +1346,7 @@ float watvor(vec2 p) {
 }
 
 vec2 watpos(vec4 chupos, float t) {
-	return chupos.xz + 0.125 * valpar_2D(chupos.xz * 4.0 + t); //仅扰动坐标，无需使用柏林噪声
+	return chupos.xz + 0.125 * valpar_2D(chupos.xz * 4.0 + t); //仅扰动坐标，无需使用柏林噪声   Only disturb the coordinates, no need to use Berlin noise
 }
 
 float getwatlig(vec4 chupos, vec2 uv1, float t) {
@@ -1398,7 +1429,7 @@ vec3 render_light_bound(vec3 outcol, vec2 uv1, vec3 N, vec3 blopos) {
 
 //chunk animation
 vec3 chunk_animation(vec3 chupos, float rcfa) {
-	//谢谢茶宝!嘶哈嘶哈斯哈斯哈嘶哈嘶哈斯哈斯哈~
+	//谢谢茶宝!嘶哈嘶哈斯哈斯哈嘶哈嘶哈斯哈斯哈~  Thank you Chabao! Sohahahahahahahahahahahahahahahaha~
 	chupos.y += 12.0 * pow2(cos(-MATH_PI * rcfa + MATH_PI * 0.5));
 	chupos.y += 128.0 * (rcfa + log(1.0 - rcfa));
 	return chupos;
