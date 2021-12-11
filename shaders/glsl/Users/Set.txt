@@ -590,7 +590,7 @@
 #define HARDCODE_MATEL 0.8
 #define F0          vec3(0.040)
 #define F0_LEAVES   vec3(0.020)
-#define F0_WATER    vec3(0.040) //vec3(0.020)
+#define F0_WATER    vec3(0.200) //ORIGINALLY vec3(0.040) changed to make water visible underground where sunlight is not present
 #define F0_GLASS    vec3(0.035)
 #define F0_DIAMOND  vec3(0.172)
 #if NORMAL_MAP_FIX
