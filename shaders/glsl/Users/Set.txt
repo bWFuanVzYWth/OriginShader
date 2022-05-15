@@ -13,7 +13,7 @@
 //0 关闭太空模式
 //0 Space Mode Off
 
-#define SAMPLING_LEVEL 2
+#define SAMPLING_LEVEL 3
 //1 low
 //2 medium
 //3 high
@@ -287,9 +287,9 @@
 #define TONEMAP 2
 #define LUM 1.0
 #define FOG_A 16.0
-#define O3 (0.007 * vec3(3.426, 8.298, 0.356) * 0.06)
-#define LR (0.007 * vec3(0.580, 1.350, 3.310))
-#define LM (0.015 * vec3(2.000, 2.000, 2.000))
+#define O3 (0.010 * vec3(3.426, 8.298, 0.356) * 0.06)
+#define LR (0.010 * vec3(0.580, 1.350, 3.310))
+#define LM (0.010 * vec3(2.000, 2.000, 2.000))
 #define USE_WATER_TEXTURE 0
 #define WATER_TYPE 2
 #define MILKY_WAY_LIGHT 0.05
@@ -324,9 +324,9 @@
 #define TONEMAP 1
 #define LUM 1.0
 #define FOG_A 16.0
-#define O3 (0.007 * vec3(3.426, 8.298, 0.356) * 0.06)
-#define LR (0.003 * vec3(0.580, 1.350, 3.310))
-#define LM (0.015 * vec3(2.000, 2.000, 2.000))
+#define O3 (0.010 * vec3(3.426, 8.298, 0.356) * 0.06)
+#define LR (0.005 * vec3(0.580, 1.350, 3.310))
+#define LM (0.005 * vec3(2.000, 2.000, 2.000))
 #define USE_WATER_TEXTURE 0
 #define WATER_TYPE 2
 #define MILKY_WAY_LIGHT 0.05
@@ -361,8 +361,8 @@
 #define TONEMAP 1
 #define LUM 1.0
 #define FOG_A 16.0
-#define O3 (0.007 * vec3(3.426, 8.298, 0.356) * 0.06)
-#define LR (0.011 * vec3(0.580, 1.350, 3.310))
+#define O3 (0.010 * vec3(3.426, 8.298, 0.356) * 0.06)
+#define LR (0.015 * vec3(0.580, 1.350, 3.310))
 #define LM (0.015 * vec3(2.000, 2.000, 2.000))
 #define USE_WATER_TEXTURE 0
 #define WATER_TYPE 2
