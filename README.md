@@ -8,7 +8,7 @@
 Please help me improve the English translation! thank you!  
 
 Twitter https://twitter.com/linlin67601187  
-Github  https://github.com/origin0110  
+Github  https://github.com/bWFuanVzYWth  
 Discord https://discord.gg/reKUV7zGkF  
 
 通过此文件修改设置：  
