@@ -782,6 +782,46 @@ float getpm3(float c, const vec3 pm3, const vec3 g3) {
     return dot(tmp, pm3);
 }
 
+float chapmanApproximation(float X, float h, float cosZenith){
+	float c = sqrt(X + h);
+	float cExpH = c * exp(-h);
+
+	// if (cosZenith >= 0.0){
+	// 	return cExpH / (c * cosZenith + 1.0);
+	// }else{
+	// 	float x0 = sqrt(1.0 - cosZenith * cosZenith) * (X + h);
+	// 	float c0 = sqrt(x0);
+
+	// 	return 2.0 * c0 * exp(X - x0) - cExpH / (1.0 - c * cosZenith);
+	// }
+
+	
+	float t1 = cExpH / (c * cosZenith + 1.0);
+
+	float x0 = sqrt(1.0 - cosZenith * cosZenith) * (X + h);
+	float c0 = sqrt(x0);
+
+	float t2 = 2.0 * c0 * exp(X - x0) - cExpH / (1.0 - c * cosZenith);
+	
+	return cosZenith >= 0.0 ? t1 : t2;
+}
+
+float getOpticalDepth(float h, float H, float earthRadius, float cosZenith){
+	return H * chapmanApproximation(earthRadius / H, h / H, cosZenith);
+}
+
+float computeOpticalDepth(vec3 pos, vec3 dir, float H){
+    return getOpticalDepth(length(pos) - EARTH_R, H, EARTH_R, dot(normalize(pos), dir));
+}
+
+vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
+	return vec2(
+		computeOpticalDepth(sampos, sunvec, HR),
+		computeOpticalDepth(sampos, sunvec, HM)
+	);
+}
+
+/*
 vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
     vec2 adssum = vec2(0.0);
 
@@ -814,6 +854,7 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
     //延迟常量计算
     return adssum * 0.5;
 }
+*/
 
 vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunvec) {
     const float R2 = EARTH_r * EARTH_r;
