@@ -245,8 +245,13 @@ vec3 PBRNeutralToneMapping(vec3 color) {
 // Input color is non-negative and resides in the Linear Rec. 709 color space.
 // Output color is also Linear Rec. 709, but in the [0, 1] range.
 
+#if 0
     const float startCompression = 0.8 - 0.04;
     const float desaturation = 0.15;
+#else
+    const float startCompression = 0.7 - F0;
+    const float desaturation = 1.0;
+#endif
 
     float x = min(color.r, min(color.g, color.b));
     float offset = x < 0.08 ? x - 6.25 * x * x : 0.04;
@@ -381,7 +386,7 @@ vec2 hash22(vec2 p) {
 float hash21(vec2 p) {
 #if HASH21_TYPE == 1
     // 2 fract    3 mad    4 *
-    vec2 r2 = (1.0 / 4093.0) * p + vec2(0.13736226422, 0.0);  // Magic Nubmer
+    vec2 r2 = (1.0 / 4093.0) * p + vec2(1.145141919, 0.0);  // Magic Nubmer
     float r = fract(dot(r2, r2) * 4093.0);
     r = fract(r * r * 4093.0);
 
@@ -1084,15 +1089,7 @@ vec3 physicsun(vec3 skylig, vec3 orisunlig, vec3 sunvec, vec3 skyvec, const floa
 
 // cloud
 bool iscloud(vec3 p0) {
-    vec3 p1 = floor(p0 * (1.0 / 3.0));
-#if 1
-    bool t_b = hash21(p1.xz) > CLOUD_COVERAGE;
-    if(t_b)
-        t_b = hash21(p0.xz) > CLOUD_COVERAGE;
-    return t_b;
-#else
-    return (hash21(p1.xz) > CLOUD_COVERAGE) && (hash21(p0.xz) > CLOUD_COVERAGE);
-#endif
+    return (hash21(p0.xz) < CLOUD_COVERAGE);
 }
 
 float closamsun(vec3 sampos, vec3 aabbsam, vec3 sunvec) {

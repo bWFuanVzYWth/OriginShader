@@ -235,7 +235,7 @@
 #define MOOCOL vec3(1.0000, 1.0000, 1.0000)
 #define MOOLIGHT_A 0.2
 #define POICOL vec3(1.0000, 0.5155, 0.2087)
-#define POILIGHT_A 14.0
+#define POILIGHT_A 1.0
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
 #define ENVLIGHT_A 0.02
 #define LATITUDE 0.2618
@@ -464,7 +464,7 @@
 #define CLOSIZ NaN
 
 #elif CLOUD_TYPE == 2
-#define CLOUD_COVERAGE 0.7
+#define CLOUD_COVERAGE 0.18
 #define CLOUD_LM NaN
 #define CLOUD_SPEED vec2(0.02, 0.05)
 #define PM_CLOUD NaN
@@ -475,11 +475,11 @@
 #define CLOSIZ vec3(CLOUD_W, CLOUD_H, CLOUD_W)
 
 #elif CLOUD_TYPE == 3
-#define CLOUD_COVERAGE 0.7
-#define CLOUD_LM 2.0
+#define CLOUD_COVERAGE 0.18
+#define CLOUD_LM 4.0
 #define CLOUD_SPEED vec2(0.02, 0.05)
-#define PM_CLOUD vec4(0.15, 0.35, 0.35, 0.15)
-#define G_CLOUD vec4(0.5, 0.8, 0.95, 0.98)
+#define PM_CLOUD vec4(0.5, 0.1, 0.3, 0.1)
+#define G_CLOUD vec4(0.0, 0.8, 0.95, 0.98)
 #define CLOUD_W (1.0)
 #define CLOUD_H (1.0 / 3.0)
 #define CLOUD_Y (3.0)
