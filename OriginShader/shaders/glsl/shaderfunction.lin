@@ -251,42 +251,28 @@ vec3 FilmicTonemap(vec3 x) {
     return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
-float agx_curve(float x) {
-    if(x >= (20.0 / 33.0))
-        return 0.5 + (2.0 * (-(20.0 / 33.0) + x)) / pow(1.0 + 69.86278913545539 * pow(-(20.0 / 33.0) + x, (13.0 / 4.0)), (4.0 / 13.0));
-    else
-        return 0.5 + (2.0 * (-(20.0 / 33.0) + x)) / pow(1.0 - 59.507875 * pow(-(20.0 / 33.0) + x, (3.0 / 1.0)), (1.0 / 3.0));
+vec3 agx_curve3(vec3 v) {
+    vec3 mask = step(v, vec3(0.0));
+    vec3 a = (0.013247155) + (0.007716549 - 0.013247155) * mask;
+    vec3 b = (3.0 / 1.0) + (13.0 / 4.0 - 3.0 / 1.0) * mask;
+    vec3 c = (-1.0 / 3.0) + (-4.0 / 13.0 + 1.0 / 3.0) * mask;
+    return 0.5 + 0.12121212 * v * pow(1.0 + a * pow(abs(v), b), c);
 }
 
-vec3 agx_curve3(vec3 v){
-    return vec3(agx_curve(v.x),agx_curve(v.y),agx_curve(v.z));
-}
-
-vec3 tonemapAgX(vec3 /*Linear BT.709*/val) {
-    const mat3 agx_mat = mat3(
-        0.842479062253094,   0.0423282422610123, 0.0423756549057051,
-        0.0784335999999992,  0.878468636469772,  0.0784336,
-        0.0792237451477643,  0.0791661274605434, 0.879142973793104);
-    const mat3 agx_mat_inv = mat3(
-        1.19687900512017,    -0.0528968517574562, -0.0529716355144438,
-        -0.0980208811401368, 1.15190312990417,    -0.0980434501171241,
-        -0.0990297440797205, -0.0989611768448433, 1.15107367264116);
-    const float min_ev = -12.47393;
-    const float max_ev = 4.026069;
+vec3 agx_tonemapping(vec3 /*Linear BT.709*/ci) {
+    const mat3 agx_mat = mat3(0.84247905, 0.04232824, 0.04237565, 0.07843360, 0.87846863, 0.07843360, 0.07922374, 0.07916613, 0.87914300);
+    const mat3 agx_mat_inv = mat3(1.19687903, -0.05289685, -0.05297164, -0.09802088, 1.15190315, -0.09804345, -0.09902974, -0.09896117, 1.15107369);
 
     // Input transform (inset)
-    val = agx_mat * val;
-
-    // Log2 space encoding
-    val = clamp(log2(val) * (1.0 / (max_ev - min_ev)) - (min_ev / (max_ev - min_ev)), vec3(0.0), vec3(1.0));
+    ci = agx_mat * ci;
 
     // Apply sigmoid function
-    vec3 res = agx_curve3(val);
+    vec3 co = agx_curve3(log2(ci));
 
     // Inverse input transform (outset)
-    res = agx_mat_inv * res;
+    co = agx_mat_inv * co;
 
-    return /*Linear BT.709*/res;
+    return /*Linear BT.709*/co;
 }
 
 // http://filmicgames.com/archives/75    <- no found
@@ -309,7 +295,7 @@ vec3 tonemap(vec3 c, float l) {
 #if TONEMAP == 1
     return tonemapACES(c * l);
 #elif TONEMAP == 2
-    return tonemapAgX(c * l);
+    return agx_tonemapping(c * l);
 #else
     return c * vec3(l);
 #endif
@@ -481,12 +467,10 @@ float voro_2D(vec2 p) {
 
 #if FAST_VORO
     vec2 b = round(p);
-    for (float i = -1.0; i <= 0.0; i++)
-        for (float j = -1.0; j <= 0.0; j++)
+    for(float i = -1.0; i <= 0.0; i++) for(float j = -1.0; j <= 0.0; j++)
 #else
-    vec2 b = floor(p);
-    for (float i = -1.0; i <= 1.0; i++)
-        for (float j = -1.0; j <= 1.0; j++)
+            vec2 b = floor(p);
+    for(float i = -1.0; i <= 1.0; i++) for(float j = -1.0; j <= 1.0; j++)
 #endif
         {
             vec2 c = b + vec2(i, j);
@@ -534,11 +518,11 @@ float getgraao(vec3 c) {
 }
 
 vec4 getvarcol(vec4 c) {
-    if (equ3(c.rgb)) {
+    if(equ3(c.rgb)) {
         c.a = c.r;
         c.rgb = vec3(1.0, 1.0, 1.0);
     } else {
-        if (c.a < 0.001)
+        if(c.a < 0.001)
             c.a = getleaao(c.rgb);
         else
             c.a = getgraao(c.rgb);
@@ -557,7 +541,7 @@ float getshadow(vec2 uv1, vec4 varcol) {
     bool t_a = uv1.y >= 0.875;
     bool t_b = uv1.y <= 0.875 - 1.0 / SUN_R;
 
-    if (t_a || t_b)  //跳过反三角函数
+    if(t_a || t_b)  //跳过反三角函数
         shadow = t_a ? 1.0 : 0.0;
     else {
         shadow = saturate(uv1.y * (1.0 / SOFTSHADOW / SUN_R) + (1.0 - 0.875 * (1.0 / SOFTSHADOW / SUN_R))) * 2.0 - 1.0;
@@ -593,11 +577,11 @@ float uv1y2lig(float uv1y) {
 // TODO 目前还不能进行侧面检测，还需要进一步减少误判
 bool isunderwater(vec3 n, vec2 uv1, vec4 cp, vec4 tc, vec4 vc) {
     return n.y > 0.9                                             // normal
-           && uv1.y < 0.9                                        // sunlight
-           && abs((2.0 * cp.y - 15.0) / 16.0 - uv1.y) < 0.00002  // depth
-           && !equ3(tc.rgb)                                      // stone
-           && (equ3(vc.rgb) || vc.a < 0.00001)                   // grass
-           && abs(fract(cp.y) - 0.5) > 0.00001;                  // slab
+    && uv1.y < 0.9                                        // sunlight
+    && abs((2.0 * cp.y - 15.0) / 16.0 - uv1.y) < 0.00002  // depth
+    && !equ3(tc.rgb)                                      // stone
+    && (equ3(vc.rgb) || vc.a < 0.00001)                   // grass
+    && abs(fract(cp.y) - 0.5) > 0.00001;                  // slab
 }
 
 // brdf bsdf
@@ -757,9 +741,9 @@ vec3 getBRDF(vec3 BaseColor, vec3 SpecularColor, float Roughness, float NoV, flo
 // TODO 查看labPBR文档，使用标准内的数值
 vec3 getmetalF0(int c) {
     const mat4 F0_METAL = mat4(vec4(1.000, 0.782, 0.344, 0.0),   //金
-                               vec4(0.972, 0.960, 0.915, 0.0),   //银
-                               vec4(0.955, 0.638, 0.538, 0.0),   //铜
-                               vec4(0.562, 0.565, 0.578, 0.0));  //铁
+    vec4(0.972, 0.960, 0.915, 0.0),   //银
+    vec4(0.955, 0.638, 0.538, 0.0),   //铜
+    vec4(0.562, 0.565, 0.578, 0.0));  //铁
 
     return F0_METAL[(c & 0xC) >> 2].rgb;
 }
@@ -786,9 +770,9 @@ float getpm3(float c, const vec3 pm3, const vec3 g3) {
     return dot(tmp, pm3);
 }
 
-float chapmanApproximation(float X, float h, float cosZenith){
-	float c = sqrt(X + h);
-	float cExpH = c * exp(-h);
+float chapmanApproximation(float X, float h, float cosZenith) {
+    float c = sqrt(X + h);
+    float cExpH = c * exp(-h);
 
 	// if (cosZenith >= 0.0){
 	// 	return cExpH / (c * cosZenith + 1.0);
@@ -799,30 +783,26 @@ float chapmanApproximation(float X, float h, float cosZenith){
 	// 	return 2.0 * c0 * exp(X - x0) - cExpH / (1.0 - c * cosZenith);
 	// }
 
-	
-	float t1 = cExpH / (c * cosZenith + 1.0);
+    float t1 = cExpH / (c * cosZenith + 1.0);
 
-	float x0 = sqrt(1.0 - cosZenith * cosZenith) * (X + h);
-	float c0 = sqrt(x0);
+    float x0 = sqrt(1.0 - cosZenith * cosZenith) * (X + h);
+    float c0 = sqrt(x0);
 
-	float t2 = 2.0 * c0 * exp(X - x0) - cExpH / (1.0 - c * cosZenith);
-	
-	return cosZenith >= 0.0 ? t1 : t2;
+    float t2 = 2.0 * c0 * exp(X - x0) - cExpH / (1.0 - c * cosZenith);
+
+    return cosZenith >= 0.0 ? t1 : t2;
 }
 
-float getOpticalDepth(float h, float H, float earthRadius, float cosZenith){
-	return H * chapmanApproximation(earthRadius / H, h / H, cosZenith);
+float getOpticalDepth(float h, float H, float earthRadius, float cosZenith) {
+    return H * chapmanApproximation(earthRadius / H, h / H, cosZenith);
 }
 
-float computeOpticalDepth(vec3 pos, vec3 dir, float H){
+float computeOpticalDepth(vec3 pos, vec3 dir, float H) {
     return getOpticalDepth(length(pos) - EARTH_R, H, EARTH_R, dot(normalize(pos), dir));
 }
 
 vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
-	return vec2(
-		computeOpticalDepth(sampos, sunvec, HR),
-		computeOpticalDepth(sampos, sunvec, HM)
-	);
+    return vec2(computeOpticalDepth(sampos, sunvec, HR), computeOpticalDepth(sampos, sunvec, HM));
 }
 
 /*
@@ -884,7 +864,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
     vec3 expodm1 = vec3(0.0);
 
 #if PLANET_ATMOSPHERE
-    if (nohitraybal(R2, t1.z, PoL))
+    if(nohitraybal(R2, t1.z, PoL))
 #endif
     {
         //第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
@@ -903,7 +883,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
     float em;
     float dp;
 
-    if (nohitflag) {
+    if(nohitflag) {
         vec3 maxpos = marpos + max(0.0, PoV) * marvec;
         mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
         em = mpx - t1.x;
@@ -917,7 +897,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
         dp = -em * (0.99999 / MARNUM);  // 1.0 -> 0.99999
     }
 
-    for (float j = 1.0; j <= MARNUM; j++) {
+    for(float j = 1.0; j <= MARNUM; j++) {
         t0 = t1;
 
         t1.x = -abs(em + dp * j) + mpx;
@@ -937,7 +917,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 
 #if PLANET_ATMOSPHERE
         //如果直接用EARTH_R会有奇怪的条纹
-        if (nohitraybal(R2_99995, t1.z, PoL))
+        if(nohitraybal(R2_99995, t1.z, PoL))
 #endif
         {
             vec2 adssum = atmads(marpos, sunvec, PoL, t1);
@@ -1004,7 +984,7 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 
     float l = length(delpos) * (1.0 / MARNUM);
 
-    for (float j = 1.0; j <= MARNUM; j++) {
+    for(float j = 1.0; j <= MARNUM; j++) {
         marpos += l * marvec;
 
         r2 = dot(marpos, marpos);
@@ -1061,7 +1041,7 @@ vec3 physicsun(vec3 skylig, vec3 orisunlig, vec3 sunvec, vec3 skyvec, const floa
 
     float theta = acos(dot(skyvec, sunvec));
 
-    if (theta < r) {
+    if(theta < r) {
         vec3 lig = orisunlig / s;
         // vec3 lig = orisunlig * 5.0; //物理不正确，但是好看
         float mu = sqrt(1.0 - pow2(theta / r));
@@ -1078,7 +1058,7 @@ bool iscloud(vec3 p0) {
     vec3 p1 = floor(p0 * (1.0 / 3.0));
 #if 1
     bool t_b = hash21(p1.xz) > CLOUD_COVERAGE;
-    if (t_b)
+    if(t_b)
         t_b = hash21(p0.xz) > CLOUD_COVERAGE;
     return t_b;
 #else
@@ -1088,7 +1068,7 @@ bool iscloud(vec3 p0) {
 
 float closamsun(vec3 sampos, vec3 aabbsam, vec3 sunvec) {
     float samsum = 0.0;
-    for (float k = 0.0; k < CLOSAMNUM && aabbsam.y == CLOUD_Y; k++) {
+    for(float k = 0.0; k < CLOSAMNUM && aabbsam.y == CLOUD_Y; k++) {
         vec4 intsun = maraabb(sampos, sunvec, aabbsam, aabbsam + CLOSIZ);
         samsum += iscloud(aabbsam) ? intsun.w : 0.0;
         sampos += intsun.w * sunvec;
@@ -1106,9 +1086,9 @@ vec3 cloudrender_fast(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 s
 
     float marsum = 0.0;
 
-    for (float i = 0.0; i < 8.0 && aabbmar.y == CLOUD_Y; i++) {
+    for(float i = 0.0; i < 8.0 && aabbmar.y == CLOUD_Y; i++) {
         vec4 intclo = maraabb(marpos, marvec, aabbmar, aabbmar + CLOSIZ);
-        if (iscloud(aabbmar))
+        if(iscloud(aabbmar))
             marsum += intclo.w;
         marpos += intclo.w * marvec;
         aabbmar += intclo.xyz * CLOSIZ;
@@ -1127,10 +1107,10 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
     float marsum = 0.0;
     float expsum = 0.0;
 
-    for (float i = 0.0; i < CLOINTNUM && aabbmar.y == CLOUD_Y; i++) {
+    for(float i = 0.0; i < CLOINTNUM && aabbmar.y == CLOUD_Y; i++) {
         vec4 intclo = maraabb(marpos, marvec, aabbmar, aabbmar + CLOSIZ);
 
-        if (iscloud(aabbmar)) {
+        if(iscloud(aabbmar)) {
             float l = intclo.w * (1.0 / CLOMARNUM);
             vec3 marstep = l * marvec;
 
@@ -1143,7 +1123,7 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
 
             float s = 0.0;
 
-            for (float j = 0.0; j < CLOMARNUM; j++) {
+            for(float j = 0.0; j < CLOMARNUM; j++) {
                 sampos += marstep;
 
                 t0 = t1;
@@ -1253,19 +1233,19 @@ vec3 skyrender(vec3 skylig, vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunli
 
     bool nohitear = nohitraybal(R2, r2, PoV);
 
-    if (campos.y < EARTH_R + CLOUD_Y) {
+    if(campos.y < EARTH_R + CLOUD_Y) {
         float clolen = intraybal(R2_Y, r2, PoV);
 
-        if ((clolen < -0.5) || (!nohitear)) {
+        if((clolen < -0.5) || (!nohitear)) {
             needrendercloud = false;
         } else {
             reaclopos = campos + skyvec * clolen;
             fakclopos = reaclopos;
             fakclopos.y = CLOUD_Y + 0.00001;
         }
-    } else if (campos.y > EARTH_R + CLOUD_Y + CLOUD_H) {
+    } else if(campos.y > EARTH_R + CLOUD_Y + CLOUD_H) {
         float clolen = intraybal(R2_YH, r2, PoV);
-        if (clolen < -0.5) {
+        if(clolen < -0.5) {
             needrendercloud = false;
         } else {
             reaclopos = campos + skyvec * clolen;
@@ -1274,7 +1254,7 @@ vec3 skyrender(vec3 skylig, vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunli
         }
     }
 
-    if (needrendercloud) {
+    if(needrendercloud) {
         skylig = physicsky(skylig, reaclopos, skyvec, orisunlig, sunvec);
 #if CLOUD_TYPE == 2
         skylig = cloudrender_fast(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
@@ -1349,8 +1329,7 @@ float watvor(vec2 p) {
     float m = 2.0;
 
     vec2 b = round(p);
-    for (float i = -1.0; i <= 0.0; i++)
-        for (float j = -1.0; j <= 0.0; j++) {
+    for(float i = -1.0; i <= 0.0; i++) for(float j = -1.0; j <= 0.0; j++) {
             vec2 c = b + vec2(i, j);
             vec2 h = c + (hash22(c) * 0.8 + 0.1);
             m = min(distance(p, h), m);
@@ -1386,7 +1365,7 @@ vec3 render_redstone_power(vec3 oc, vec3 rwc) {
 
 vec3 render_redstone_power(vec3 oc, vec3 ic, vec3 bp, sampler2D t) {
     vec3 rwc = vec3(0.0);
-    if (ic.b < 0.001 && all(lessThan(abs(0.5 - bp.xz), vec2(2.0 / 16.0)))) {
+    if(ic.b < 0.001 && all(lessThan(abs(0.5 - bp.xz), vec2(2.0 / 16.0)))) {
         int pw = int(max(0.0, (25.0 * ic.r - 9.5)));
         ivec2 os = ivec2(pw * 32 + 8, 8);
         ivec2 ruv = ivec2(bp.xz * 64.0 - 24.0);
@@ -1421,7 +1400,7 @@ vec3 render_chunk_bound(vec3 oc, vec3 cp, vec3 N, vec3 bp) {
     vec3 cc = vec3(0.0);
     bvec3 cb = greaterThan(abs(8.0 - cp.xyz), vec3(8.0 - 1.5 / 16.0));
     bvec3 bb = greaterThan(abs(0.5 - bp.xyz), vec3(0.5 - 0.5 / 16.0));
-    if ((cb.x || cb.z) && (bb.x && bb.y || bb.y && bb.z || bb.z && bb.x)) {
+    if((cb.x || cb.z) && (bb.x && bb.y || bb.y && bb.z || bb.z && bb.x)) {
         bool flag = !(N.y > 0.9) && (cb.x && cb.y || cb.y && cb.z || cb.z && cb.x);
         cc = (flag && (cb.x && cb.z)) ? render_chunk_bound_y(cc) : cc;
         cc = (flag && (!cb.x && cb.z)) ? render_chunk_bound_x(cc) : cc;

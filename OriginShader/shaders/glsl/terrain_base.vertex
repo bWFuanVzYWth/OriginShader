@@ -29,7 +29,7 @@ uniform vec4 SKY_FAR_COLOR;
 uniform vec4 RAIN_NEAR_COLOR;
 uniform vec4 RAIN_FAR_COLOR;
 uniform vec4 COLOR_MAPPING_PARAM;
-#endif
+#endif // TRY_MCPE_NETEASE
 uniform vec4 FOG_COLOR;
 uniform vec2 FOG_CONTROL;
 uniform float RENDER_CHUNK_FOG_ALPHA;
@@ -57,7 +57,7 @@ out vec3 outsca;
 out vec3 insca;
 out vec4 worpos;
 out vec4 chupos;
-#endif
+#endif // BYPASS_PIXEL_SHADER
 
 void main() {
 	chupos = POSITION; //只是为了区块动画
@@ -65,14 +65,14 @@ void main() {
 #ifdef ALLOW_FADE
 #if CHUNK_ANIMATION
 	chupos.xyz = chunk_animation(chupos.xyz, RENDER_CHUNK_FOG_ALPHA);
-#endif
-#endif
+#endif // CHUNK_ANIMATION
+#endif // ALLOW_FADE
 
 #ifdef AS_ENTITY_RENDERER
 	worpos = chupos;
 #else
-	worpos = vec4(chupos.xyz * CHUNK_ORIGIN_AND_SCALE.w + CHUNK_ORIGIN_AND_SCALE.xyz, 1.0);
-#endif
+	worpos = vec4(chupos.xyz * CHUNK_ORIGIN_AND_SCALE.w + CHUNK_ORIGIN_AND_SCALE.xyz, 1.0f);
+#endif // AS_ENTITY_RENDERER
 
 	chupos = POSITION; //真正传递的
 
@@ -81,25 +81,25 @@ void main() {
 #ifndef BYPASS_PIXEL_SHADER
 	uv0 = TEXCOORD_0;
 	uv1 = TEXCOORD_1;
-#endif
+#endif // BYPASS_PIXEL_SHADER
 
 	col = COLOR;
 
 #ifndef SEASONS
 	varcol = getvarcol(COLOR);
 #else
-	varcol = vec4(mix(vec3(1.0), texture(TEXTURE_2, COLOR.xy).rgb * 2.0, COLOR.z), COLOR.a);
-#endif
+	varcol = vec4(mix(vec3(1.0f), texture(TEXTURE_2, COLOR.xy).rgb * 2.0f, COLOR.z), COLOR.a);
+#endif // SEASONS
 
-	campos = vec3(0.0, EARTH_R + ELEVATION, 0.0);
-	clocampos = vec3(0.0, EARTH_R + ELEVATION + CLOUD_Y, 0.0);
+	campos = vec3(0.0f, EARTH_R + ELEVATION, 0.0f);
+	clocampos = vec3(0.0f, EARTH_R + ELEVATION + CLOUD_Y, 0.0f);
 
 #if TRY_MCPE_NETEASE
 	setsunlig(SUN_DIR, campos, orisunlig, grosunlig, L);
 #else
 	float t = fogtime(FOG_COLOR);
 	setsunlig(t, campos, orisunlig, grosunlig, L);
-#endif
+#endif // TRY_MCPE_NETEASE
 
 	setfog(outsca, insca, getearpos(campos, worpos), campos, orisunlig, L, uv1);
 	envlig = getenvlig(uv1, grosunlig, orisunlig, campos, L, varcol.a);
@@ -107,10 +107,8 @@ void main() {
 // TODO 改进判定条件
 #if !defined(ALPHA_TEST) || defined(SEASONS)
 	closunlig = getsunlig(clocampos, orisunlig, L);
-	closkylum = physicsky(vec3(0.0), clocampos, vec3(0.0, 0.8, 0.6), orisunlig, L);
-#endif
-
-#endif
+	closkylum = physicsky(vec3(0.0f), clocampos, vec3(0.0f, 0.8f, 0.6f), orisunlig, L);
+#endif // !defined(ALPHA_TEST) || defined(SEASONS)
 }
 
 #endif //ORIGIN_SHADER
