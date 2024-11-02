@@ -81,6 +81,7 @@ void main() {
 #ifndef BYPASS_PIXEL_SHADER
 	uv0 = TEXCOORD_0;
 	uv1 = TEXCOORD_1;
+#endif
 
 	col = COLOR;
 

@@ -2,3 +2,5 @@
 *.mcpack
 
 OriginShader/textures
+
+OriginShader/studio.json
