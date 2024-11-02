@@ -1,0 +1,115 @@
+#version 300 es
+#pragma optimize(on)
+
+#ifdef ORIGIN_SHADER
+
+precision highp float;
+precision highp int;
+
+#include "shaderfunction.lin"
+
+uniform sampler2D TEXTURE_0;
+uniform sampler2D TEXTURE_1;
+uniform sampler2D TEXTURE_2;
+
+uniform mat4 WORLDVIEWPROJ;
+uniform mat4 WORLD;
+uniform mat4 WORLDVIEW;
+uniform mat4 PROJ;
+uniform vec4 CHUNK_ORIGIN_AND_SCALE;
+#if TRY_MCPE_NETEASE
+uniform vec4 EXTRA_VECTOR1;
+uniform vec4 EXTRA_VECTOR2;
+uniform vec4 EXTRA_VECTOR3;
+uniform vec4 EXTRA_VECTOR4;
+uniform vec4 SUN_DIR;
+uniform vec4 WATER_TEXTURE_UV_RANGE;
+uniform vec4 SKY_NEAR_COLOR;
+uniform vec4 SKY_FAR_COLOR;
+uniform vec4 RAIN_NEAR_COLOR;
+uniform vec4 RAIN_FAR_COLOR;
+uniform vec4 COLOR_MAPPING_PARAM;
+#endif
+uniform vec4 FOG_COLOR;
+uniform vec2 FOG_CONTROL;
+uniform float RENDER_CHUNK_FOG_ALPHA;
+uniform float TOTAL_REAL_WORLD_TIME;
+
+in vec4 POSITION;
+in vec4 COLOR;
+in vec2 TEXCOORD_0;
+in vec2 TEXCOORD_1;
+
+#ifndef BYPASS_PIXEL_SHADER
+flat out vec3 campos;
+flat out vec3 clocampos;
+flat out vec3 orisunlig;
+flat out vec3 grosunlig;
+flat out vec3 L;
+flat out vec3 closunlig;
+flat out vec3 closkylum;
+centroid out vec2 uv0;
+centroid out vec2 uv1;
+out vec3 envlig;
+out vec4 col;
+out vec4 varcol;
+out vec3 outsca;
+out vec3 insca;
+out vec4 worpos;
+out vec4 chupos;
+#endif
+
+void main() {
+	chupos = POSITION; //只是为了区块动画
+
+#ifdef ALLOW_FADE
+#if CHUNK_ANIMATION
+	chupos.xyz = chunk_animation(chupos.xyz, RENDER_CHUNK_FOG_ALPHA);
+#endif
+#endif
+
+#ifdef AS_ENTITY_RENDERER
+	worpos = chupos;
+#else
+	worpos = vec4(chupos.xyz * CHUNK_ORIGIN_AND_SCALE.w + CHUNK_ORIGIN_AND_SCALE.xyz, 1.0);
+#endif
+
+	chupos = POSITION; //真正传递的
+
+	gl_Position = WORLDVIEWPROJ * worpos;
+
+#ifndef BYPASS_PIXEL_SHADER
+	uv0 = TEXCOORD_0;
+	uv1 = TEXCOORD_1;
+
+	col = COLOR;
+
+#ifndef SEASONS
+	varcol = getvarcol(COLOR);
+#else
+	varcol = vec4(mix(vec3(1.0), texture(TEXTURE_2, COLOR.xy).rgb * 2.0, COLOR.z), COLOR.a);
+#endif
+
+	campos = vec3(0.0, EARTH_R + ELEVATION, 0.0);
+	clocampos = vec3(0.0, EARTH_R + ELEVATION + CLOUD_Y, 0.0);
+
+#if TRY_MCPE_NETEASE
+	setsunlig(SUN_DIR, campos, orisunlig, grosunlig, L);
+#else
+	float t = fogtime(FOG_COLOR);
+	setsunlig(t, campos, orisunlig, grosunlig, L);
+#endif
+
+	setfog(outsca, insca, getearpos(campos, worpos), campos, orisunlig, L, uv1);
+	envlig = getenvlig(uv1, grosunlig, orisunlig, campos, L, varcol.a);
+
+// TODO 改进判定条件
+#if !defined(ALPHA_TEST) || defined(SEASONS)
+	closunlig = getsunlig(clocampos, orisunlig, L);
+	closkylum = physicsky(vec3(0.0), clocampos, vec3(0.0, 0.8, 0.6), orisunlig, L);
+#endif
+
+#endif
+}
+
+#endif //ORIGIN_SHADER

@@ -1,0 +1,481 @@
+#version 300 es
+#pragma optimize(on)
+
+#ifdef ORIGIN_SHADER
+
+precision highp float;
+precision highp int;
+
+#include "shaderfunction.lin"
+
+uniform sampler2D TEXTURE_0;
+uniform sampler2D TEXTURE_1;
+uniform sampler2D TEXTURE_2;
+
+uniform mat4 WORLDVIEWPROJ;
+uniform mat4 WORLD;
+uniform mat4 WORLDVIEW;
+uniform mat4 PROJ;
+uniform vec4 FOG_COLOR;
+uniform vec2 FOG_CONTROL;
+uniform float RENDER_CHUNK_FOG_ALPHA;
+uniform float TOTAL_REAL_WORLD_TIME;
+
+#ifndef BYPASS_PIXEL_SHADER
+flat in vec3 campos;
+flat in vec3 clocampos;
+flat in vec3 orisunlig;
+flat in vec3 grosunlig;
+flat in vec3 L;
+flat in vec3 closunlig;
+flat in vec3 closkylum;
+centroid in vec2 uv0;
+centroid in vec2 uv1;
+in vec3 envlig;
+in vec4 col;
+in vec4 varcol;
+in vec3 outsca;
+in vec3 insca;
+in vec4 worpos;
+in vec4 chupos;
+#endif
+
+out vec4 FragColor;
+
+void main() {
+#ifdef BYPASS_PIXEL_SHADER
+	FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+	return;
+#else
+
+	vec4 outcol = vec4(GRAY, 1.0);
+
+	vec3 wornor;
+
+#if defined(ALPHA_TEST) && !defined(SEASONS) && !defined(SEASONS_FAR) && !defined(BLEND)
+	if(col.b == 0.0) { // redstone_wire
+		vec4 texcol_ = texture(TEXTURE_0, uv0);
+
+#if defined(ALPHA_TEST) && !defined(SEASONS_FAR)
+#ifdef ALPHA_TO_COVERAGE
+#define ALPHA_THRESHOLD 0.05
+#else
+#define ALPHA_THRESHOLD 0.50
+#endif
+		if(texcol_.a < ALPHA_THRESHOLD)
+			discard;
+#endif
+		outcol.rgb = texcol_.rgb * col.rgb;
+	} else
+#endif
+
+	{
+
+//#if !defined(SEASONS_FAR) && !defined(BLEND) && !defined(ALPHA_TEST)
+#if !defined(BLEND)
+#if !defined(SEASONS)
+		if(col.a < 0.001)
+#endif // leaves
+		{
+			vec4 ddxpos = dFdx(chupos);
+			vec4 ddypos = dFdy(chupos);
+			vec2 ddxuv0 = dFdx(uv0);
+			vec2 ddyuv0 = dFdy(uv0);
+
+			vec4 texcol_ = texture(TEXTURE_0, uv0);
+
+#if defined(ALPHA_TEST) && !defined(SEASONS_FAR)
+#ifdef ALPHA_TO_COVERAGE
+#define ALPHA_THRESHOLD 0.05
+#else
+#define ALPHA_THRESHOLD 0.50
+#endif
+			if(texcol_.a < ALPHA_THRESHOLD)
+				discard;
+#endif
+
+#if WHITEWORLD
+			vec4 texcol = vec4(1.0, 1.0, 1.0, texcol_.a);
+#else
+			vec4 texcol = vec4(texcol_.rgb * varcol.rgb, texcol_.a);
+#endif
+
+			wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
+
+#if USE_NORMAL_MAP
+			mat3 invTBN = getinvTBN(ddxuv0, ddyuv0, ddxpos, ddypos, wornor);
+
+			vec3 N = getblonor(TEXTURE_0, uv0, wornor, invTBN);
+#else
+			vec3 N = wornor;
+#endif
+			vec3 V = normalize(-worpos.xyz);
+			vec3 H = normalize(V + L);
+
+			// normal mapping会产生非法负值，钳制即可
+			float NoV = saturate(dot(N, V));
+			float NoL = saturate(dot(N, L));
+			float NoH = saturate(dot(N, H));
+			float VoH = dot(V, H);
+			float VoL = dot(V, L);
+
+			vec3 poilig = getpoilig(uv1);
+			vec3 sunlig;
+			if(isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
+				sunlig = grosunlig * getwatlig(chupos, uv1, TOTAL_REAL_WORLD_TIME);
+			else
+				sunlig = grosunlig * getshadow(uv1, varcol);
+
+			vec3 BaseColor = gamma2line(texcol.rgb);
+
+			vec3 sunBRDF = getBRDF(BaseColor, F0_LEAVES, ROUGHNESS, NoV, NoL, NoH, VoH, VoL);
+			vec3 poiBRDF = Diffuse_Lambert(BaseColor);
+
+			vec3 sunref = sunlig * sunBRDF * NoL;
+			vec3 poiref = poilig * poiBRDF;
+			vec3 envref = envlig * BaseColor;
+
+			vec3 ligsum = sunref + poiref + envref;
+			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
+		}
+#if !defined(SEASONS)
+		else
+#endif
+#endif
+
+#if !defined(ALPHA_TEST) && !defined(SEASONS) && !defined(SEASONS_FAR) && defined(BLEND)
+		if(col.a < 0.999) { // water
+			vec4 ddxpos = dFdx(chupos);
+			vec4 ddypos = dFdy(chupos);
+			vec2 ddxuv0 = dFdx(uv0);
+			vec2 ddyuv0 = dFdy(uv0);
+
+			vec4 texcol_ = texture(TEXTURE_0, uv0);
+
+			wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
+#if WATER_TYPE == 1
+			vec3 N = wornor;
+#elif WATER_TYPE == 2
+			mat3 invTBN = getinvTBN(ddxuv0, ddyuv0, ddxpos, ddypos, wornor);
+			vec3 N = getwatnor(invTBN, chupos, TOTAL_REAL_WORLD_TIME);
+#endif
+			vec3 V = normalize(-worpos.xyz);
+			vec3 H = normalize(V + L);
+
+			// normal mapping会产生非法负值，钳制即可
+			float NoV = saturate(dot(N, V));
+			float NoL = saturate(dot(N, L));
+			float NoH = saturate(dot(N, H));
+			float VoH = dot(V, H);
+			float VoL = dot(V, L);
+
+			vec3 poilig = getpoilig(uv1);
+			vec3 sunlig;
+			sunlig = grosunlig * getshadow(uv1, varcol);
+
+#if USE_WATER_TEXTURE
+			vec3 BaseColor = gamma2line(texcol_.rgb * col.rgb);
+#else
+			vec3 BaseColor = gamma2line(0.6 * normalize(col.rgb));
+#endif
+
+			vec4 thr = vec4(ThresholdMap16(gl_FragCoord.xy));
+
+			vec3 sunspe = Specular_BRDF(F0_WATER, ROUGHNESS_0, NoV, NoL, NoH, VoH);
+
+			vec3 sunref = sunlig * sunspe * NoL;
+			vec3 skyref = getskyref(F0_WATER, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
+			vec3 envref = envlig * BaseColor;
+			vec3 sunsca = sunlig * scattering_BSDF(BaseColor);
+			vec3 poisca = poilig * scattering_BSDF(BaseColor);
+
+			outcol.a = F0_WATER.g + line2gamma(lrgb2y(tonemap(skyref + sunsca + poisca, LUM))); //要进行一次blend，用.a而不是.rgb控制反射的强度
+			skyref /= gamma2line(outcol.a);
+			sunref /= gamma2line(outcol.a);
+
+			vec3 ligsum = sunspe + envref + skyref + sunsca + poisca;
+			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
+		} else
+#endif
+
+#if !defined(SEASONS) && !defined(SEASONS_FAR)
+		{
+#if defined(ALPHA_TEST) // tallgrass
+			vec4 ddxpos = dFdx(chupos);
+			vec4 ddypos = dFdy(chupos);
+			vec2 ddxuv0 = dFdx(uv0);
+			vec2 ddyuv0 = dFdy(uv0);
+
+			vec4 texcol_ = texture(TEXTURE_0, uv0);
+
+#if defined(ALPHA_TEST) && !defined(SEASONS_FAR)
+#ifdef ALPHA_TO_COVERAGE
+#define ALPHA_THRESHOLD 0.05
+#else
+#define ALPHA_THRESHOLD 0.50
+#endif
+			if(texcol_.a < ALPHA_THRESHOLD)
+				discard;
+#endif
+
+#if WHITEWORLD
+			vec4 texcol = vec4(1.0, 1.0, 1.0, texcol_.a);
+#else
+			vec4 texcol = vec4(texcol_.rgb * varcol.rgb, texcol_.a);
+#endif
+
+			wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
+#if USE_NORMAL_MAP
+			mat3 invTBN = getinvTBN(ddxuv0, ddyuv0, ddxpos, ddypos, wornor);
+			vec3 N = getblonor(TEXTURE_0, uv0, wornor, invTBN);
+#else
+			vec3 N = wornor;
+#endif
+			vec3 V = normalize(-worpos.xyz);
+			vec3 H = normalize(V + L);
+
+			// normal mapping会产生非法负值，钳制即可
+			float NoV = saturate(dot(N, V));
+			float NoL = saturate(dot(N, L));
+			float NoH = saturate(dot(N, H));
+			float VoH = dot(V, H);
+			float VoL = dot(V, L);
+
+			vec3 poilig = getpoilig(uv1);
+			vec3 sunlig;
+			if(isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
+				sunlig = grosunlig * getwatlig(chupos, uv1, TOTAL_REAL_WORLD_TIME);
+			else
+				sunlig = uv1.y >= 0.875 ? grosunlig : vec3(0.0);
+
+			vec3 BaseColor = gamma2line(texcol.rgb);
+
+			vec3 sunBRDF = getBRDF(BaseColor, F0_LEAVES, ROUGHNESS, NoV, NoL, NoH, VoH, VoL);
+
+			vec3 poiBRDF = Diffuse_Lambert(BaseColor);
+
+			vec3 sunref = sunlig * sunBRDF * NoL;
+			vec3 poiref = poilig * poiBRDF;
+			vec3 envref = envlig * BaseColor;
+
+			vec3 ligsum = sunref + poiref + envref;
+			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
+
+#elif defined(BLEND) // transparent
+			vec4 ddxpos = dFdx(chupos);
+			vec4 ddypos = dFdy(chupos);
+			vec2 ddxuv0 = dFdx(uv0);
+			vec2 ddyuv0 = dFdy(uv0);
+
+			vec4 texcol_ = texture(TEXTURE_0, uv0);
+
+#if defined(ALPHA_TEST) && !defined(SEASONS_FAR)
+#ifdef ALPHA_TO_COVERAGE
+#define ALPHA_THRESHOLD 0.05
+#else
+#define ALPHA_THRESHOLD 0.50
+#endif
+			if(texcol_.a < ALPHA_THRESHOLD)
+				discard;
+#endif
+
+#if WHITEWORLD
+			vec4 texcol = vec4(1.0, 1.0, 1.0, texcol_.a);
+#else
+			vec4 texcol = vec4(texcol_.rgb * varcol.rgb, texcol_.a);
+#endif
+
+			wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
+#if USE_NORMAL_MAP
+			mat3 invTBN = getinvTBN(ddxuv0, ddyuv0, ddxpos, ddypos, wornor);
+			vec3 N = getblonor(TEXTURE_0, uv0, wornor, invTBN);
+#else
+			vec3 N = wornor;
+#endif
+			vec3 V = normalize(-worpos.xyz);
+			vec3 H = normalize(V + L);
+
+			// normal mapping会产生非法负值，钳制即可
+			float NoV = saturate(dot(N, V));
+			float NoL = saturate(dot(N, L));
+			float NoH = saturate(dot(N, H));
+			float VoH = dot(V, H);
+			float VoL = dot(V, L);
+
+			vec3 poilig = getpoilig(uv1);
+			vec3 sunlig;
+			if(isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
+				sunlig = grosunlig * getwatlig(chupos, uv1, TOTAL_REAL_WORLD_TIME);
+			else
+				sunlig = grosunlig * getshadow(uv1, varcol);
+
+			vec3 BaseColor = gamma2line(texcol.rgb);
+
+			vec4 thr = vec4(ThresholdMap16(gl_FragCoord.xy));
+
+			vec3 sunspe = Specular_BRDF(F0_GLASS, ROUGHNESS_0, NoV, NoL, NoH, VoH);
+
+			vec3 sunref = sunlig * sunspe * NoL;
+			vec3 skyref = getskyref(F0_GLASS, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
+			vec3 envref = envlig * BaseColor;
+			vec3 sunsca = sunlig * scattering_BSDF(BaseColor);
+			vec3 poisca = poilig * scattering_BSDF(BaseColor);
+
+			outcol.a = texcol.a + line2gamma(lrgb2y(tonemap(skyref, LUM))); //要进行一次blend，用.a而不是.rgb控制反射的强度
+			skyref /= gamma2line(outcol.a);
+			sunref /= gamma2line(outcol.a);
+
+			vec3 ligsum = sunspe + envref + skyref + sunsca + poisca;
+			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
+
+#else // default
+			vec4 ddxpos = dFdx(chupos);
+			vec4 ddypos = dFdy(chupos);
+			vec2 ddxuv0 = dFdx(uv0);
+			vec2 ddyuv0 = dFdy(uv0);
+
+			vec4 texcol_ = texture(TEXTURE_0, uv0);
+
+#if defined(ALPHA_TEST) && !defined(SEASONS_FAR)
+#ifdef ALPHA_TO_COVERAGE
+#define ALPHA_THRESHOLD 0.05
+#else
+#define ALPHA_THRESHOLD 0.50
+#endif
+			if(texcol_.a < ALPHA_THRESHOLD)
+				discard;
+#endif
+
+#if WHITEWORLD
+			vec4 texcol = vec4(1.0, 1.0, 1.0, texcol_.a);
+#else
+			vec4 texcol = vec4(texcol_.rgb * varcol.rgb, texcol_.a);
+#endif
+
+			wornor = normalize(cross(ddxpos.xyz, ddypos.xyz));
+
+			vec4 texcol_o = textureLod(TEXTURE_0, uv0, 0.0);
+
+#if USE_NORMAL_MAP
+			mat3 invTBN = getinvTBN(ddxuv0, ddyuv0, ddxpos, ddypos, wornor);
+			vec3 N = getblonor_a(TEXTURE_0, uv0, wornor, invTBN);
+#else
+			vec3 N = wornor;
+#endif
+
+			vec3 V = normalize(-worpos.xyz);
+			vec3 H = normalize(V + L);
+
+			// normal mapping会产生非法负值，钳制即可
+			float NoV = saturate(dot(N, V));
+			float NoL = saturate(dot(N, L));
+			float NoH = saturate(dot(N, H));
+			float VoH = dot(V, H);
+			float VoL = dot(V, L);
+
+			vec3 poilig = getpoilig(uv1);
+			vec3 sunlig;
+			if(isunderwater(wornor, uv1, chupos, textureLod(TEXTURE_0, uv0, 3.0), col))
+				sunlig = grosunlig * getwatlig(chupos, uv1, TOTAL_REAL_WORLD_TIME);
+			else
+				sunlig = grosunlig * getshadow(uv1, varcol);
+
+			int blockcode = getblockcode(texcol_o.a);
+
+			bool ismetal = (blockcode & 0x80) == 0;
+			bool issmooth = (blockcode & 0x40) == 0;
+			bool isfluorescence = (blockcode & 0x20) == 0;
+			bool usenormal = (blockcode & 0x10) == 0;
+
+			vec3 BaseColor = gamma2line(texcol.rgb);
+
+			vec3 ligsum = vec3(0.0);
+
+			if(isfluorescence)
+				ligsum += BaseColor * FLUORESCENCE;
+
+			if(ismetal) {
+				vec3 F0_MATEL = mix(BaseColor, getmetalF0(blockcode), HARDCODE_MATEL);
+
+				if(issmooth) {
+					vec4 thr = vec4(ThresholdMap16(gl_FragCoord.xy));
+
+					vec3 sunspe = Specular_BRDF(F0_MATEL, ROUGHNESS_0, NoV, NoL, NoH, VoH);
+
+					vec3 sunref = sunlig * sunspe * NoL;
+					vec3 poiref = getpoilig(uv1) * Diffuse_Lambert(GRAY) * F0_MATEL;
+					vec3 envref = getskyref(F0_MATEL, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
+
+					ligsum += sunref + poiref + envref;
+				} else {
+					vec3 sunspe = Specular_BRDF(F0_MATEL, ROUGHNESS_0, NoV, NoL, NoH, VoH);
+
+					vec3 sunref = sunlig * sunspe * NoL;
+					vec3 poiref = getpoilig(uv1) * Diffuse_Lambert(GRAY) * F0_MATEL;
+					vec3 envref = envlig * F0_MATEL;
+
+					ligsum += sunref + poiref + envref;
+				}
+			} else {
+				if(issmooth) {
+					vec4 thr = vec4(ThresholdMap16(gl_FragCoord.xy));
+
+					vec3 sunBRDF = getBRDF(BaseColor, F0, ROUGHNESS_0, NoV, NoL, NoH, VoH, VoL);
+					vec3 poiBRDF = Diffuse_Lambert(BaseColor);
+
+					vec3 sunref = sunlig * sunBRDF * NoL;
+					vec3 poiref = poilig * poiBRDF;
+					vec3 envref = envlig * BaseColor + getskyref(F0, NoV, uv1, campos, V, N, L, orisunlig, closunlig, closkylum, thr, TOTAL_REAL_WORLD_TIME);
+
+					ligsum += poiref + sunref + envref;
+				} else {
+					vec3 sunBRDF = getBRDF(BaseColor, F0, ROUGHNESS, NoV, NoL, NoH, VoH, VoL);
+					vec3 poiBRDF = Diffuse_Lambert(BaseColor);
+
+					vec3 poiref = poilig * poiBRDF;
+					vec3 sunref = sunlig * sunBRDF * NoL;
+					vec3 envref = envlig * BaseColor;
+
+					ligsum += poiref + sunref + envref;
+				}
+			}
+
+			outcol.rgb = lig2col(ligsum * outsca + orisunlig * insca);
+
+#endif
+		}
+#endif
+	}
+
+#if REDSTONE_POWER || CHUNK_BOUND || LIGHT_MAP
+	vec3 blopos = fract(chupos.xyz);
+#endif
+
+#if defined(ALPHA_TEST) && !defined(SEASONS) && !defined(SEASONS_FAR) && !defined(BLEND)
+#if REDSTONE_POWER
+	outcol.rgb = render_redstone_power(outcol.rgb, col.rgb, blopos, TEXTURE_0);
+#endif
+#endif
+
+#if CHUNK_BOUND
+	outcol.rgb = render_chunk_bound(outcol.rgb, chupos.xyz, wornor, blopos);
+#endif
+
+#if LIGHT_MAP == 1
+	outcol.rgb = render_light_bound(outcol.rgb, uv1, wornor, blopos);
+#endif
+
+#if ACHROMATOPSIA
+	outcol.rgb = vec3(srgb2y(outcol.rgb));
+#endif
+
+#ifdef ALPHA_TO_COVERAGE
+	outcol.r = 1.0;
+#endif
+
+	FragColor = outcol;
+
+#endif
+}
+
+#endif // ORIGIN_SHADER

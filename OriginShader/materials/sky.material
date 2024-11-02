@@ -1,0 +1,30 @@
+{
+  "cubemap": {
+    "states": [
+      "Blending"
+    ],
+    "blendSrc": "SourceAlpha",
+    "blendDst": "OneMinusSrcAlpha",
+    "vertexShader": "shaders/cubemap.vertex",
+    "vrGeometryShader": "shaders/cubemap.geometry",
+    "fragmentShader": "shaders/cubemap.fragment",
+    "+defines": [
+      "ORIGIN_SHADER"
+    ],
+    "samplerStates": [
+      {
+        "samplerIndex": 0,
+        "textureFilter": "Bilinear"
+      }
+    ],
+    "vertexFields": [
+      {
+        "field": "Position"
+      },
+      {
+        "field": "UV0"
+      }
+    ],
+    "msaaSupport": "Both"
+  }
+}

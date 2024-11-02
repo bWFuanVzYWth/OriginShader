@@ -1,0 +1,1450 @@
+/*
+    Origin Shader
+    Copyright (C) 2020-2021 linlin
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#include "Users/Set.txt"
+
+// math
+
+//常用的快速幂，比pow的效率更高
+float pow3_2(float x) {
+    return x * sqrt(x);
+}
+
+vec2 pow3_2(vec2 x) {
+    return x * sqrt(x);
+}
+
+vec3 pow3_2(vec3 x) {
+    return x * sqrt(x);
+}
+
+vec4 pow3_2(vec4 x) {
+    return x * sqrt(x);
+}
+
+float pow2(float x) {
+    return x * x;
+}
+
+vec2 pow2(vec2 x) {
+    return x * x;
+}
+
+vec3 pow2(vec3 x) {
+    return x * x;
+}
+
+vec4 pow2(vec4 x) {
+    return x * x;
+}
+
+float pow3(float x) {
+    return x * x * x;
+}
+
+float pow4(float x) {
+    x *= x;
+    return x * x;
+}
+
+float pow5(float x) {
+    float x2 = x * x;
+    return x2 * x2 * x;
+}
+
+//快速幂结束
+
+bool equ3(vec3 v) {
+    // return abs(v.x-v.y) < 0.000002 && abs(v.y-v.z) < 0.000002;
+    return all(lessThan(abs(v.xy - v.yz), vec2(0.000002)));
+}
+
+float saturate(float x) {
+    return clamp(x, 0.0, 1.0);
+}
+
+//几乎用不到，大部分情况都是已经被归一化的向量求点积
+float veccos(vec3 v1, vec3 v2) {
+    // return dot(v1, v2) / (length(v1) * length(v2));
+    return dot(v1, v2) * inversesqrt(dot(v1, v1) * dot(v2, v2));
+}
+
+// The maximum error is below 1.5 × 10-7
+float erf(float x) {
+    // constants
+    const float a1 = 0.254829592;
+    const float a2 = -0.284496736;
+    const float a3 = 1.421413741;
+    const float a4 = -1.453152027;
+    const float a5 = 1.061405429;
+    const float p = 0.3275911;
+
+    // Save the sign of x
+    float sign = x > 0.0 ? 1.0 : -1.0;
+    x = abs(x);
+
+    // A&S formula 7.1.26
+    float t = 1.0 / (1.0 + p * x);
+    float y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * exp(-x * x);
+
+    return sign * y;
+}
+
+//逆矩阵，开销极大，慎用
+
+mat3 inverse_mat3(mat3 m) {
+    float Determinant = m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2]) - m[1][0] * (m[0][1] * m[2][2] - m[2][1] * m[0][2]) + m[2][0] * (m[0][1] * m[1][2] - m[1][1] * m[0][2]);
+
+    mat3 Inverse;
+    Inverse[0][0] = +(m[1][1] * m[2][2] - m[2][1] * m[1][2]);
+    Inverse[1][0] = -(m[1][0] * m[2][2] - m[2][0] * m[1][2]);
+    Inverse[2][0] = +(m[1][0] * m[2][1] - m[2][0] * m[1][1]);
+    Inverse[0][1] = -(m[0][1] * m[2][2] - m[2][1] * m[0][2]);
+    Inverse[1][1] = +(m[0][0] * m[2][2] - m[2][0] * m[0][2]);
+    Inverse[2][1] = -(m[0][0] * m[2][1] - m[2][0] * m[0][1]);
+    Inverse[0][2] = +(m[0][1] * m[1][2] - m[1][1] * m[0][2]);
+    Inverse[1][2] = -(m[0][0] * m[1][2] - m[1][0] * m[0][2]);
+    Inverse[2][2] = +(m[0][0] * m[1][1] - m[1][0] * m[0][1]);
+    Inverse /= Determinant;
+
+    return Inverse;
+}
+
+mat4 inverse_mat4(mat4 m) {
+    float Coef00 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
+    float Coef02 = m[1][2] * m[3][3] - m[3][2] * m[1][3];
+    float Coef03 = m[1][2] * m[2][3] - m[2][2] * m[1][3];
+
+    float Coef04 = m[2][1] * m[3][3] - m[3][1] * m[2][3];
+    float Coef06 = m[1][1] * m[3][3] - m[3][1] * m[1][3];
+    float Coef07 = m[1][1] * m[2][3] - m[2][1] * m[1][3];
+
+    float Coef08 = m[2][1] * m[3][2] - m[3][1] * m[2][2];
+    float Coef10 = m[1][1] * m[3][2] - m[3][1] * m[1][2];
+    float Coef11 = m[1][1] * m[2][2] - m[2][1] * m[1][2];
+
+    float Coef12 = m[2][0] * m[3][3] - m[3][0] * m[2][3];
+    float Coef14 = m[1][0] * m[3][3] - m[3][0] * m[1][3];
+    float Coef15 = m[1][0] * m[2][3] - m[2][0] * m[1][3];
+
+    float Coef16 = m[2][0] * m[3][2] - m[3][0] * m[2][2];
+    float Coef18 = m[1][0] * m[3][2] - m[3][0] * m[1][2];
+    float Coef19 = m[1][0] * m[2][2] - m[2][0] * m[1][2];
+
+    float Coef20 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
+    float Coef22 = m[1][0] * m[3][1] - m[3][0] * m[1][1];
+    float Coef23 = m[1][0] * m[2][1] - m[2][0] * m[1][1];
+
+    const vec4 SignA = vec4(1.0, -1.0, 1.0, -1.0);
+    const vec4 SignB = vec4(-1.0, 1.0, -1.0, 1.0);
+
+    vec4 Fac0 = vec4(Coef00, Coef00, Coef02, Coef03);
+    vec4 Fac1 = vec4(Coef04, Coef04, Coef06, Coef07);
+    vec4 Fac2 = vec4(Coef08, Coef08, Coef10, Coef11);
+    vec4 Fac3 = vec4(Coef12, Coef12, Coef14, Coef15);
+    vec4 Fac4 = vec4(Coef16, Coef16, Coef18, Coef19);
+    vec4 Fac5 = vec4(Coef20, Coef20, Coef22, Coef23);
+
+    vec4 Vec0 = vec4(m[1][0], m[0][0], m[0][0], m[0][0]);
+    vec4 Vec1 = vec4(m[1][1], m[0][1], m[0][1], m[0][1]);
+    vec4 Vec2 = vec4(m[1][2], m[0][2], m[0][2], m[0][2]);
+    vec4 Vec3 = vec4(m[1][3], m[0][3], m[0][3], m[0][3]);
+
+    vec4 Inv0 = SignA * (Vec1 * Fac0 - Vec2 * Fac1 + Vec3 * Fac2);
+    vec4 Inv1 = SignB * (Vec0 * Fac0 - Vec2 * Fac3 + Vec3 * Fac4);
+    vec4 Inv2 = SignA * (Vec0 * Fac1 - Vec1 * Fac3 + Vec3 * Fac5);
+    vec4 Inv3 = SignB * (Vec0 * Fac2 - Vec1 * Fac4 + Vec2 * Fac5);
+
+    mat4 Inverse = mat4(Inv0, Inv1, Inv2, Inv3);
+
+    vec4 Row0 = vec4(Inverse[0][0], Inverse[1][0], Inverse[2][0], Inverse[3][0]);
+
+    float Determinant = dot(m[0], Row0);
+
+    Inverse /= Determinant;
+
+    return Inverse;
+}
+
+// geometry
+
+vec4 maraabb(vec3 o, vec3 v, vec3 a, vec3 b) {
+#if FAST_MATH  //这种写法会造成噪点和精度丢失
+    vec3 t_0 = 1.0 / v;
+    vec3 t_1 = -o * t_0;
+    vec3 ta = a * t_0 + t_1;
+    vec3 tb = b * t_0 + t_1;
+#else
+    vec3 ta = (a - o) / v;
+    vec3 tb = (b - o) / v;
+
+#endif
+
+    vec4 t2;
+    t2.xyz = max(ta, tb);
+    t2.w = min(min(t2.x, t2.y), t2.z);
+    t2.xyz = sign(v) * step(t2.xyz, t2.www);
+
+    return t2;
+}
+
+//完整的射线与球求交
+//大部分时候都可以预计算中间变量并简化逻辑，此函数仅用于理解
+float intraybal(float r, vec3 p, vec3 d) {
+    float r2 = r * r;
+    float l = dot(d, -p);
+    float p2 = dot(p, p);
+    float t = l * l + r2;
+    float q = sqrt(t - p2);
+    return ((p2 > r2 && l < 0.0) || t < p2) ? -1.0 : (r2 > p2 ? q : -q) + l;
+}
+
+//球心在原点
+float intraybal(float R2, float r2, float PoD) {
+    float t = PoD * PoD + R2;
+    float q = sqrt(t - r2);
+    return ((r2 > R2 && PoD < 0.0) || t < r2) ? -1.0 : (R2 > r2 ? q : -q) + PoD;
+}
+
+//球心在原点且只求解距离
+float lenraybal(float R2, float r2, float PoD) {
+    float q = sqrt(PoD * PoD + R2 - r2);
+    return (R2 > r2 ? q : -q) + PoD;
+}
+
+//球心在原点且只进行相交测试
+bool nohitraybal(float R2, float r2, float PoD) {
+    return ((r2 > R2 && PoD < 0.0) || PoD * PoD + R2 < r2);
+}
+
+mat3 getinvTBN(vec2 dxuv, vec2 dyuv, vec4 dxp, vec4 dyp, vec3 wornor) {
+    vec3 T = normalize(dxp.xyz * dyuv.y - dxuv.y * dyp.xyz);
+    vec3 B = normalize(dxp.xyz * dyuv.x - dxuv.x * dyp.xyz);
+    vec3 N = cross(T, B);
+    return mat3(T, B, dot(N, vec3(wornor)) > 0.0 ? N : -N);
+}
+
+// tonemap
+
+vec3 FilmicTonemap(vec3 x) {
+    const float A = 0.22;  // Shoulder Strength
+    const float B = 0.30;  // Linear Strength
+    const float C = 0.10;  // Linear Angle
+    const float D = 0.20;  // Toe Strength
+    const float E = 0.01;  // Toe Numerator
+    const float F = 0.30;  // Toe Denominator
+    return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
+}
+
+float agx_curve(float x) {
+    if(x >= (20.0 / 33.0))
+        return 0.5 + (2.0 * (-(20.0 / 33.0) + x)) / pow(1.0 + 69.86278913545539 * pow(-(20.0 / 33.0) + x, (13.0 / 4.0)), (4.0 / 13.0));
+    else
+        return 0.5 + (2.0 * (-(20.0 / 33.0) + x)) / pow(1.0 - 59.507875 * pow(-(20.0 / 33.0) + x, (3.0 / 1.0)), (1.0 / 3.0));
+}
+
+vec3 agx_curve3(vec3 v){
+    return vec3(agx_curve(v.x),agx_curve(v.y),agx_curve(v.z));
+}
+
+vec3 tonemapAgX(vec3 /*Linear BT.709*/val) {
+    const mat3 agx_mat = mat3(
+        0.842479062253094,   0.0423282422610123, 0.0423756549057051,
+        0.0784335999999992,  0.878468636469772,  0.0784336,
+        0.0792237451477643,  0.0791661274605434, 0.879142973793104);
+    const mat3 agx_mat_inv = mat3(
+        1.19687900512017,    -0.0528968517574562, -0.0529716355144438,
+        -0.0980208811401368, 1.15190312990417,    -0.0980434501171241,
+        -0.0990297440797205, -0.0989611768448433, 1.15107367264116);
+    const float min_ev = -12.47393;
+    const float max_ev = 4.026069;
+
+    // Input transform (inset)
+    val = agx_mat * val;
+
+    // Log2 space encoding
+    val = clamp(log2(val) * (1.0 / (max_ev - min_ev)) - (min_ev / (max_ev - min_ev)), vec3(0.0), vec3(1.0));
+
+    // Apply sigmoid function
+    vec3 res = agx_curve3(val);
+
+    // Inverse input transform (outset)
+    res = agx_mat_inv * res;
+
+    return /*Linear BT.709*/res;
+}
+
+// http://filmicgames.com/archives/75    <- no found
+vec3 tonemapFilmic(vec3 color) {
+    const vec3 WHITE = vec3(11.2);  // whiteScale
+    return FilmicTonemap(1.6 * color) / FilmicTonemap(WHITE);
+}
+
+// https://www.oscars.org/science-technology/sci-tech-projects/aces
+vec3 tonemapACES(vec3 color) {
+    const float A = 2.51;
+    const float B = 0.03;
+    const float C = 2.43;
+    const float D = 0.59;
+    const float E = 0.14;
+    return (color * (A * color + B)) / (color * (C * color + D) + E);
+}
+
+vec3 tonemap(vec3 c, float l) {
+#if TONEMAP == 1
+    return tonemapACES(c * l);
+#elif TONEMAP == 2
+    return tonemapAgX(c * l);
+#else
+    return c * vec3(l);
+#endif
+}
+
+// color
+float gamma2line(float x) {
+    return pow(x, GAMMA);
+}
+
+float line2gamma(float x) {
+    return pow(x, 1.0 / GAMMA);
+}
+
+vec3 gamma2line(vec3 x) {
+    return pow(x, vec3(GAMMA));
+}
+
+vec3 line2gamma(vec3 x) {
+    return pow(x, vec3(1.0 / GAMMA));
+}
+
+vec3 lig2col(vec3 lig) {
+    return line2gamma(tonemap(lig, LUM));
+}
+
+//使用前注意区分色彩空间
+
+float srgb2y(vec3 col) {
+    return dot(col, vec3(0.299, 0.587, 0.114));
+}
+
+float lrgb2y(vec3 col) {
+    return dot(col, vec3(0.2126, 0.7152, 0.0722));
+}
+
+// hash, noise
+// TODO 检查是否有更好的写法
+float ThresholdMap16(vec2 p) {
+    // https://en.wikipedia.org/wiki/Ordered_dithering
+    const mat4 TM = mat4(0.0000, 0.5000, 0.1250, 0.5250, 0.7500, 0.2500, 0.8750, 0.3750, 0.1875, 0.6875, 0.0625, 0.5625, 0.9375, 0.4375, 0.8125, 0.3125);
+    ivec2 p4 = ivec2(p + 2400.0) % 4;
+    return TM[p4.y][p4.x];
+}
+
+vec2 hash22(vec2 p) {
+#if HASH22_TYPE == 1
+    // 4 fract    5 mad    5 *
+    vec2 r2 = (1.0 / 4093.0) * p + vec2(0.273, 0.478);
+    r2 = fract(4093.0 * dot(r2, r2) + vec2(0.273, 0.478));
+    r2 = fract(r2 * r2 * 4093.0);
+#endif
+
+    return r2;
+}
+
+//有些硬件的三角函数计算特别快，在那些硬件上sin_hash性能更高
+float hash21(vec2 p) {
+#if HASH21_TYPE == 1
+    // 2 fract    3 mad    4 *
+    vec2 r2 = (1.0 / 4093.0) * p + vec2(0.13736226422, 0.0);  // Magic Nubmer
+    float r = fract(dot(r2, r2) * 4093.0);
+    r = fract(r * r * 4093.0);
+
+#elif HASH21_TYPE == 2
+    // 1 fract    1 mad    2 *    1 sin
+    float r = fract(43757.5453 * sin(dot(p, vec2(12.9898, 78.233))));
+#endif
+
+    return r;
+}
+
+float pernoi_2D(vec2 p) {
+    vec4 pi = vec4(floor(p), ceil(p));
+    vec2 pf = fract(p);
+    vec4 dp = vec4(0.0, 0.0, 1.0, 1.0) - pf.xyxy;
+
+    vec4 d;
+    d.x = dot(hash22(pi.zw) * 2.0 - 1.0, dp.zw);
+    d.y = dot(hash22(pi.xw) * 2.0 - 1.0, dp.xw);
+    d.z = dot(hash22(pi.xy) * 2.0 - 1.0, dp.xy);
+    d.w = dot(hash22(pi.zy) * 2.0 - 1.0, dp.zy);
+
+#if FAST_PERLIN
+    vec2 a = (-2.0 * pf + 3.0) * pf * pf;
+#else
+    vec2 a = ((6.0 * pf - 15.0) * pf + 10.0) * pf * pf * pf;
+#endif
+
+    vec2 x = mix(d.yz, d.xw, a.x);
+    return mix(x.y, x.x, a.y);
+}
+
+vec2 perpar_2D(vec2 p) {
+    vec4 pi = vec4(floor(p), ceil(p));
+    vec2 pf = fract(p);
+    vec4 dp = vec4(0.0, 0.0, 1.0, 1.0) - pf.xyxy;
+
+    vec4 d;
+    d.x = dot(hash22(pi.zw) * 2.0 - 1.0, dp.zw);
+    d.y = dot(hash22(pi.xw) * 2.0 - 1.0, dp.xw);
+    d.z = dot(hash22(pi.xy) * 2.0 - 1.0, dp.xy);
+    d.w = dot(hash22(pi.zy) * 2.0 - 1.0, dp.zy);
+
+#if FAST_PERLIN
+    vec2 a = (-2.0 * pf + 3.0) * pf * pf;
+    vec2 b = (-6.0 * pf + 6.0) * pf;
+#else
+    vec2 a = ((6.0 * pf - 15.0) * pf + 10.0) * pf * pf * pf;
+    vec2 b = ((30.0 * pf - 60.0) * pf + 30.0) * pf * pf;
+#endif
+
+    return ((d.wy - d.zz) + (d.z + d.x - d.w - d.y) * a.yx) * b.xy;
+}
+
+float valnoi_2D(vec2 p) {
+    vec4 pi = vec4(floor(p), ceil(p));
+    vec2 pf = fract(p);
+    vec4 dp = vec4(0.0, 0.0, 1.0, 1.0) - pf.xyxy;
+
+    //内联hash，两种写法在算法上等价
+    // vec4 d = vec4(hash21(pi.zw), hash21(pi.xw), hash21(pi.xy), hash21(pi.zy));
+
+    vec4 t = (1.0 / 4093.0) * pi + vec4(0.25, 0.0, 0.25, 0.0);
+    t *= t;
+
+    vec4 d = t.zxxz + t.wwyy;
+    d = fract(d * 4093.0);
+    d = fract(d * d * 4093.0);
+
+#if FAST_VALUE
+    vec2 a = (-2.0 * pf + 3.0) * pf * pf;
+#else
+    vec2 a = ((6.0 * pf - 15.0) * pf + 10.0) * pf * pf * pf;
+#endif
+
+    vec2 x = mix(d.yz, d.xw, a.x);
+    return mix(x.y, x.x, a.y);
+}
+
+vec2 valpar_2D(vec2 p) {
+    vec4 pi = vec4(floor(p), ceil(p));
+    vec2 pf = fract(p);
+    vec4 dp = vec4(0.0, 0.0, 1.0, 1.0) - pf.xyxy;
+
+    //内联hash，两种写法在算法上等价
+    // vec4 d = vec4(hash21(pi.zw), hash21(pi.xw), hash21(pi.xy), hash21(pi.zy));
+
+    vec4 t = (1.0 / 4093.0) * pi + vec4(0.25, 0.0, 0.25, 0.0);
+    t *= t;
+
+    vec4 d = t.zxxz + t.wwyy;
+    d = fract(d * 4093.0);
+    d = fract(d * d * 4093.0);
+
+#if FAST_VALUE
+    vec2 a = (-2.0 * pf + 3.0) * pf * pf;
+    vec2 b = (-6.0 * pf + 6.0) * pf;
+#else
+    vec2 a = ((6.0 * pf - 15.0) * pf + 10.0) * pf * pf * pf;
+    vec2 b = ((30.0 * pf - 60.0) * pf + 30.0) * pf * pf;
+#endif
+
+    return ((d.wy - d.zz) + (d.z + d.x - d.w - d.y) * a.yx) * b.xy;
+}
+
+float voro_2D(vec2 p) {
+    float m = 2.0;
+
+#if FAST_VORO
+    vec2 b = round(p);
+    for (float i = -1.0; i <= 0.0; i++)
+        for (float j = -1.0; j <= 0.0; j++)
+#else
+    vec2 b = floor(p);
+    for (float i = -1.0; i <= 1.0; i++)
+        for (float j = -1.0; j <= 1.0; j++)
+#endif
+        {
+            vec2 c = b + vec2(i, j);
+            vec2 h = c + hash22(c);
+            m = min(distance(p, h), m);
+        }
+
+    return m;
+}
+
+// vanilla shader
+
+float fogtime(vec4 fogcol) {
+    //三次多项式拟合，四次多项式拟合曲线存在明显突出故不使用
+    // return fogcol.g > 0.213101 ? 1.0 : (((349.305545 * fogcol.g - 159.858192) * fogcol.g + 30.557216) * fogcol.g - 1.628452);
+    return clamp(((349.305545 * fogcol.g - 159.858192) * fogcol.g + 30.557216) * fogcol.g - 1.628452, -1.0, 1.0);
+}
+
+float uv1time(float r1) {
+    return (((39.581994 * r1 - 74.236058) * r1 + 33.842220) * r1 + 9.368113) * r1 - 7.363836;
+}
+
+float curtime(vec4 curcol, vec4 fogcol) {
+    //原始数据线性变化，无需拟合即可解得精确值
+    return 1.812780 * (curcol.b / fogcol.a) - 0.918842;
+}
+
+//对colormap建模在rgb空间内与color向量求交，精确计算并分离出方块暗角浓度
+float getleaao(vec3 c) {
+    const vec3 O = vec3(0.682352941176471, 0.643137254901961, 0.164705882352941);
+    const vec3 N = vec3(0.195996912842436, 0.978673548072766, -0.061508507207520);
+
+    // return length(c) / dot(O, N) * dot(normalize(c), N);
+    // return dot(c , N) / dot(O, N);
+    return dot(c, vec3(0.260278, 1.29965, -0.0816814));
+}
+
+float getgraao(vec3 c) {
+    const vec3 O = vec3(0.745098039215686, 0.713725490196078, 0.329411764705882);
+    const vec3 N = vec3(0.161675377098328, 0.970052262589970, 0.181272392504186);
+
+    // return length(c) / dot(O, N) * dot(normalize(c), N);
+    // return dot(c , N) / dot(O, N);
+    return dot(c, vec3(0.185295, 1.11177, 0.207755));
+}
+
+vec4 getvarcol(vec4 c) {
+    if (equ3(c.rgb)) {
+        c.a = c.r;
+        c.rgb = vec3(1.0, 1.0, 1.0);
+    } else {
+        if (c.a < 0.001)
+            c.a = getleaao(c.rgb);
+        else
+            c.a = getgraao(c.rgb);
+        c.rgb = c.rgb / c.a;
+    }
+    return c;
+}
+
+float getshadow(vec2 uv1, vec4 varcol) {
+    float shadow;
+
+#if FAST_SOFTSHADOW
+    shadow = saturate(uv1.y * (1.0 / SOFTSHADOW / SUN_R) + (1.0 - 0.875 * (1.0 / SOFTSHADOW / SUN_R)));
+    shadow = (-2.0 * shadow + 3.0) * shadow * shadow;
+#else
+    bool t_a = uv1.y >= 0.875;
+    bool t_b = uv1.y <= 0.875 - 1.0 / SUN_R;
+
+    if (t_a || t_b)  //跳过反三角函数
+        shadow = t_a ? 1.0 : 0.0;
+    else {
+        shadow = saturate(uv1.y * (1.0 / SOFTSHADOW / SUN_R) + (1.0 - 0.875 * (1.0 / SOFTSHADOW / SUN_R))) * 2.0 - 1.0;
+        shadow = (sqrt(1.0 - shadow * shadow) * shadow + asin(shadow)) * (1.0 / MATH_PI) + 0.5;
+    }
+#endif
+
+    return shadow;
+}
+
+float ux2l(float l) {
+    return 1.0 / (l * l);
+}
+
+float uv1x2lig(float uv1x) {
+    float l = saturate((14.0 / 16.0) - uv1x) * 16.0 + 0.5;
+    return max(0.0, ux2l(l) - ux2l(15.0) * (1.0 - uv1x));
+}
+
+float uy2l(float l) {
+#if 1
+    return exp(-0.2 * l);
+#else
+    return (2.0 / MATH_PI) * atan(3.0 / l);
+#endif
+}
+
+float uv1y2lig(float uv1y) {
+    float l = saturate((15.0 / 16.0) - uv1y) * 16.0;
+    return max(0.0, uy2l(l) - uy2l(15.0) * (1.0 - uv1y));
+}
+
+// TODO 目前还不能进行侧面检测，还需要进一步减少误判
+bool isunderwater(vec3 n, vec2 uv1, vec4 cp, vec4 tc, vec4 vc) {
+    return n.y > 0.9                                             // normal
+           && uv1.y < 0.9                                        // sunlight
+           && abs((2.0 * cp.y - 15.0) / 16.0 - uv1.y) < 0.00002  // depth
+           && !equ3(tc.rgb)                                      // stone
+           && (equ3(vc.rgb) || vc.a < 0.00001)                   // grass
+           && abs(fract(cp.y) - 0.5) > 0.00001;                  // slab
+}
+
+// brdf bsdf
+
+vec3 Diffuse_Lambert(vec3 BaseColor) {
+    return (1.0 / MATH_PI) * BaseColor;
+}
+
+float D_GGX(float Roughness, float NoH) {
+    //[Walter et al. 2007, "Microfacet models for refraction through rough surfaces"]
+    float a = Roughness * Roughness;
+    float a2 = a * a;
+    float d = (NoH * a2 - NoH) * NoH + 1.0;
+    return a2 / (MATH_PI * d * d);
+}
+
+float Vis_Implicit() {
+    return 0.25;
+}
+
+float Vis_Smith(float Roughness, float NoV, float NoL) {
+    float r2 = Roughness * Roughness;
+    float r4 = r2 * r2;
+
+    // float Vis_SmithV = NoV + sqrt(NoV * (NoV - NoV * r4) + r4);
+    // float Vis_SmithL = NoL + sqrt(NoL * (NoL - NoL * r4) + r4);
+    // float Vis = 1.0 / (Vis_SmithV * Vis_SmithL);
+    vec2 tmp_vis = vec2(NoV, NoL);
+    tmp_vis = tmp_vis + sqrt(tmp_vis * (tmp_vis - tmp_vis * r4) + r4);
+    float Vis = 1.0 / (tmp_vis.x * tmp_vis.y);
+
+    return Vis;
+}
+
+vec3 F_Fresnel(vec3 SpecularColor, float VoH) {
+    vec3 SpecularColorSqrt = sqrt(clamp(SpecularColor, vec3(0.0), vec3(0.99)));
+    vec3 n = (1.0 + SpecularColorSqrt) / (1.0 - SpecularColorSqrt);
+    vec3 g = sqrt(n * n + VoH * VoH - 1.0);
+    return 0.5 * pow2((g - VoH) / (g + VoH)) * (1.0 + pow2(((g + VoH) * VoH - 1.0) / ((g - VoH) * VoH + 1.0)));
+}
+
+vec3 F_Schlick(vec3 SpecularColor, float VoH) {
+    //[Schlick 1994, "An Inexpensive BRDF Model for Physically-Based Rendering"]
+    float Fc = pow5(1.0 - VoH);
+    return saturate(50.0 * SpecularColor.g) * Fc + (1.0 - Fc) * SpecularColor;
+}
+
+vec3 Fresnel_BRDF(vec3 SpecularColor, float VoH) {
+#if FAST_BSDF
+    return F_Schlick(SpecularColor, VoH);
+#else
+    return F_Fresnel(SpecularColor, VoH);
+#endif
+}
+
+vec3 scattering_BSDF(vec3 BaseColor) {
+    return (1.0 / (4.0 * MATH_PI)) * BaseColor;
+}
+
+vec3 Diffuse_BRDF(vec3 BaseColor, float Roughness, float NoV, float NoL, float VoH, float VoL) {
+    return Diffuse_Lambert(BaseColor);
+}
+
+vec3 Specular_BRDF(vec3 SpecularColor, float Roughness, float NoV, float NoL, float NoH, float VoH) {
+#if FAST_BSDF
+    float r2 = Roughness * Roughness;
+    float r4 = r2 * r2;
+
+    float d = (NoH * r4 - NoH) * NoH + 1.0;
+    float D = r4 / (MATH_PI * d * d);
+
+    const float Vis = 0.25;
+
+    float Fc = pow5(1.0 - VoH);
+    vec3 F = saturate(50.0 * SpecularColor.g) * Fc + (1.0 - Fc) * SpecularColor;
+
+    vec3 specularBRDF = D * Vis * F;
+
+    return specularBRDF;
+
+#else
+    float r2 = Roughness * Roughness;
+    float r4 = r2 * r2;
+
+    float d = (NoH * r4 - NoH) * NoH + 1.0;
+    float D = r4 / (MATH_PI * d * d);
+
+    // float Vis_SmithV = NoV + sqrt(NoV * (NoV - NoV * r4) + r4);
+    // float Vis_SmithL = NoL + sqrt(NoL * (NoL - NoL * r4) + r4);
+    // float Vis = 1.0 / (Vis_SmithV * Vis_SmithL);
+    vec2 tmp_vis = vec2(NoV, NoL);
+    tmp_vis = tmp_vis + sqrt(tmp_vis * (tmp_vis - tmp_vis * r4) + r4);
+    float Vis = 1.0 / (tmp_vis.x * tmp_vis.y);
+
+    vec3 SpecularColorSqrt = sqrt(clamp(SpecularColor, vec3(0.0), vec3(0.99)));
+    vec3 n = (1.0 + SpecularColorSqrt) / (1.0 - SpecularColorSqrt);
+    vec3 g = sqrt(n * n + VoH * VoH - 1.0);
+    vec3 F = 0.5 * pow2((g - VoH) / (g + VoH)) * (1.0 + pow2(((g + VoH) * VoH - 1.0) / ((g - VoH) * VoH + 1.0)));
+
+    vec3 specularBRDF = D * Vis * F;
+
+    return specularBRDF;
+#endif
+}
+
+vec3 getBRDF(vec3 BaseColor, vec3 SpecularColor, float Roughness, float NoV, float NoL, float NoH, float VoH, float VoL) {
+#if FAST_BSDF
+    // vec3 diffuseBRDF = Diffuse_Lambert(BaseColor);
+    // vec3 specularBRDF = D_GGX(Roughness, NoH) * Vis_Implicit() * F_Schlick(SpecularColor, VoH);
+    float r2 = Roughness * Roughness;
+    float r4 = r2 * r2;
+
+    vec3 diffuseBRDF = (1.0 / MATH_PI) * BaseColor;
+
+    float d = (NoH * r4 - NoH) * NoH + 1.0;
+    float D = r4 / (MATH_PI * d * d);
+
+    const float Vis = 0.25;
+
+    float Fc = pow5(1.0 - VoH);
+    vec3 F = saturate(50.0 * SpecularColor.g) * Fc + (1.0 - Fc) * SpecularColor;
+
+    vec3 specularBRDF = D * Vis * F;
+
+    return diffuseBRDF + specularBRDF;
+
+#else
+    // vec3 diffuseBRDF = Diffuse_Gotanda(BaseColor, Roughness, NoV, NoL, VoH, VoL);
+    // vec3 specularBRDF = D_GGX(Roughness, NoH) * Vis_Smith(Roughness, NoV, NoL) * F_Fresnel(SpecularColor, VoH);
+    float r2 = Roughness * Roughness;
+    float r4 = r2 * r2;
+
+    vec3 diffuseBRDF = BaseColor * (1.0 / MATH_PI);
+
+    float d = (NoH * r4 - NoH) * NoH + 1.0;
+    float D = r4 / (MATH_PI * d * d);
+
+    // float Vis_SmithV = NoV + sqrt(NoV * (NoV - NoV * r4) + r4);
+    // float Vis_SmithL = NoL + sqrt(NoL * (NoL - NoL * r4) + r4);
+    // float Vis = 1.0 / (Vis_SmithV * Vis_SmithL);
+    vec2 tmp_vis = vec2(NoV, NoL);
+    tmp_vis = tmp_vis + sqrt(tmp_vis * (tmp_vis - tmp_vis * r4) + r4);
+    float Vis = 1.0 / (tmp_vis.x * tmp_vis.y);
+
+    vec3 SpecularColorSqrt = sqrt(clamp(SpecularColor, vec3(0.0), vec3(0.99)));
+    vec3 n = (1.0 + SpecularColorSqrt) / (1.0 - SpecularColorSqrt);
+    vec3 g = sqrt(n * n + VoH * VoH - 1.0);
+    vec3 F = 0.5 * pow2((g - VoH) / (g + VoH)) * (1.0 + pow2(((g + VoH) * VoH - 1.0) / ((g - VoH) * VoH + 1.0)));
+
+    vec3 specularBRDF = D * Vis * F;
+
+    return diffuseBRDF + specularBRDF;
+
+#endif
+}
+
+// TODO 查看labPBR文档，使用标准内的数值
+vec3 getmetalF0(int c) {
+    const mat4 F0_METAL = mat4(vec4(1.000, 0.782, 0.344, 0.0),   //金
+                               vec4(0.972, 0.960, 0.915, 0.0),   //银
+                               vec4(0.955, 0.638, 0.538, 0.0),   //铜
+                               vec4(0.562, 0.565, 0.578, 0.0));  //铁
+
+    return F0_METAL[(c & 0xC) >> 2].rgb;
+}
+
+// atmosphere
+
+//大部分时候都可以手动内联并简化逻辑，此函数仅用于理解
+vec2 airden(vec3 pos) {
+    float h = length(pos) - EARTH_R;
+    return exp(h * (1.0 / vec2(-HR, -HM)));
+}
+
+float getpr(float c) {
+    //[Oskar Elek. "Rendering Parametrizable Planetary Atmospheres with Multiple Scattering in Real-Time"]
+    return (1.0 / (4.0 * MATH_PI)) * (8.0 / 10.0) * (7.0 / 5.0 + 1.0 / 2.0 * c);
+}
+
+float getpm(float c, float g) {
+    return (3.0 / (8.0 * MATH_PI)) * ((1.0 - g * g) * (1.0 + c * c)) / ((2.0 + g * g) * pow3_2(1.0 + g * g - 2.0 * g * c));
+}
+
+float getpm3(float c, const vec3 pm3, const vec3 g3) {
+    vec3 tmp = (3.0 / (8.0 * MATH_PI)) * ((1.0 - g3 * g3) * (1.0 + c * c)) / ((2.0 + g3 * g3) * pow3_2(1.0 + g3 * g3 - 2.0 * g3 * c));
+    return dot(tmp, pm3);
+}
+
+float chapmanApproximation(float X, float h, float cosZenith){
+	float c = sqrt(X + h);
+	float cExpH = c * exp(-h);
+
+	// if (cosZenith >= 0.0){
+	// 	return cExpH / (c * cosZenith + 1.0);
+	// }else{
+	// 	float x0 = sqrt(1.0 - cosZenith * cosZenith) * (X + h);
+	// 	float c0 = sqrt(x0);
+
+	// 	return 2.0 * c0 * exp(X - x0) - cExpH / (1.0 - c * cosZenith);
+	// }
+
+	
+	float t1 = cExpH / (c * cosZenith + 1.0);
+
+	float x0 = sqrt(1.0 - cosZenith * cosZenith) * (X + h);
+	float c0 = sqrt(x0);
+
+	float t2 = 2.0 * c0 * exp(X - x0) - cExpH / (1.0 - c * cosZenith);
+	
+	return cosZenith >= 0.0 ? t1 : t2;
+}
+
+float getOpticalDepth(float h, float H, float earthRadius, float cosZenith){
+	return H * chapmanApproximation(earthRadius / H, h / H, cosZenith);
+}
+
+float computeOpticalDepth(vec3 pos, vec3 dir, float H){
+    return getOpticalDepth(length(pos) - EARTH_R, H, EARTH_R, dot(normalize(pos), dir));
+}
+
+vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
+	return vec2(
+		computeOpticalDepth(sampos, sunvec, HR),
+		computeOpticalDepth(sampos, sunvec, HM)
+	);
+}
+
+/*
+vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
+    vec2 adssum = vec2(0.0);
+
+    //仅用到瑞利散射
+    float mpx = exp(length(sampos + max(0.0, PoL) * sunvec) * (1.0 / -HR) + (EARTH_R / HR));
+
+    float em = mpx - t1.x;
+    float dp = (-2.0 * mpx + t1.x) * (0.99999 / SAMNUM);  // 1.0 -> 0.99999
+
+    // adm.x adm.y r2
+    vec3 t0;
+
+    for (float j = 1.0; j <= SAMNUM; j++) {
+        t0 = t1;
+
+        t1.x = mpx - abs(em + dp * j);
+        float h = log(t1.x) * -HR;
+        float r = h + EARTH_R;
+        t1.y = exp(h * (1.0 / -HM));
+        t1.z = r * r;
+
+        PoL = dot(sampos, -sunvec);
+        float l = lenraybal(t1.z, t0.z, PoL);
+
+        sampos += l * sunvec;
+
+        adssum += (t0.xy + t1.xy) * l;
+    }
+
+    //延迟常量计算
+    return adssum * 0.5;
+}
+*/
+
+vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunvec) {
+    const float R2 = EARTH_r * EARTH_r;
+    const float R2_99995 = (EARTH_r * 0.99995) * (EARTH_r * 0.99995);
+
+    float PoV = dot(marpos, -marvec);
+    float PoL = dot(marpos, -sunvec);
+
+    vec2 admsum = vec2(0.0);
+
+    // adm.x adm.y r2
+    vec3 t0;
+    vec3 t1;
+    t1.z = dot(marpos, marpos);
+    t1.xy = exp(sqrt(t1.z) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
+
+    vec3 marsumr = vec3(0.0);
+    vec3 expodr0;
+    vec3 expodr1 = vec3(0.0);
+
+    vec3 marsumm = vec3(0.0);
+    vec3 expodm0;
+    vec3 expodm1 = vec3(0.0);
+
+#if PLANET_ATMOSPHERE
+    if (nohitraybal(R2, t1.z, PoL))
+#endif
+    {
+        //第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
+        vec2 adorigin = atmads(marpos, sunvec, PoL, t1);
+        vec3 expodorigin = exp((-RO) * adorigin.x + (-LM) * adorigin.y);
+
+        expodr1 = expodorigin * t1.x;
+        expodm1 = expodorigin * t1.y;
+    }
+
+    float t = PoV * PoV + R2;
+    bool r2R2 = t1.z > R2;
+    bool nohitflag = ((r2R2 && PoV < 0.0) || t < t1.z);
+
+    float mpx;
+    float em;
+    float dp;
+
+    if (nohitflag) {
+        vec3 maxpos = marpos + max(0.0, PoV) * marvec;
+        mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
+        em = mpx - t1.x;
+        dp = (-2.0 * mpx + t1.x) * (0.99999 / MARNUM);  // 1.0 -> 0.99999
+    } else {
+        float q = sqrt(t - t1.z);
+
+        vec3 maxpos = marpos + ((r2R2 ? -q : q) + PoV) * marvec;
+        mpx = exp(length(maxpos) * (1.0 / -HR) + (EARTH_R / HR));
+        em = mpx - t1.x;
+        dp = -em * (0.99999 / MARNUM);  // 1.0 -> 0.99999
+    }
+
+    for (float j = 1.0; j <= MARNUM; j++) {
+        t0 = t1;
+
+        t1.x = -abs(em + dp * j) + mpx;
+        float h = log(t1.x) * -HR;
+        float r = h + EARTH_R;
+        t1.y = exp(h * (1.0 / -HM));
+        t1.z = r * r;
+
+        PoV = dot(marpos, -marvec);
+        float l = lenraybal(t1.z, t0.z, PoV);
+
+        marpos += l * marvec;
+
+        admsum += (t0.xy + t1.xy) * 0.5 * l;
+
+        PoL = dot(marpos, -sunvec);
+
+#if PLANET_ATMOSPHERE
+        //如果直接用EARTH_R会有奇怪的条纹
+        if (nohitraybal(R2_99995, t1.z, PoL))
+#endif
+        {
+            vec2 adssum = atmads(marpos, sunvec, PoL, t1);
+
+            vec2 ad = adssum + admsum;
+            vec3 od = RO * ad.x + LM * ad.y;
+            vec3 expod = exp(-od);
+
+            expodr0 = expodr1;
+            expodr1 = expod * t1.x;
+            marsumr += (expodr0 + expodr1) * l;
+
+            expodm0 = expodm1;
+            expodm1 = expod * t1.y;
+            marsumm += (expodm0 + expodm1) * l;
+        }
+    }
+    //延迟常量计算
+    marsumr *= 0.5;
+    marsumm *= 0.5;
+
+    float c = dot(sunvec, marvec);
+    float pr = getpr(c);
+    float pm = getpm3(c, PM_AIR, G_AIR);
+
+    vec3 insca = orisunlig * (pr * LR * marsumr + pm * LM * marsumm);
+#if EARTH_SHADOW
+    skylig = nohitflag ? skylig : vec3(0.0);  //地球遮挡
+#endif
+    vec3 outsca = skylig * exp((-RO) * admsum.x + (-LM) * admsum.y);
+
+    return max(vec3(0.0), outsca + insca);
+}
+
+void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunvec, vec3 pm3, vec3 g3) {
+    const float R2 = EARTH_r * EARTH_r;
+    const float R2_99995 = (EARTH_r * 0.99995) * (EARTH_r * 0.99995);
+
+    vec3 delpos = stapos - marpos;
+    vec3 marvec = normalize(delpos);
+
+    float r2 = dot(marpos, marpos);
+    float PoV = dot(marpos, -marvec);
+    float PoL = dot(marpos, -sunvec);
+
+    vec2 admsum = vec2(0.0);
+    vec2 adm0;
+    vec2 adm1 = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
+
+    vec3 marsumr = vec3(0.0);
+    vec3 expodr0;
+    vec3 expodr1 = vec3(0.0);
+
+    vec3 marsumm = vec3(0.0);
+    vec3 expodm0;
+    vec3 expodm1 = vec3(0.0);
+
+    //第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
+    vec2 adorigin = atmads(marpos, sunvec, PoL, vec3(adm1, r2));
+    vec3 expodorigin = exp((-RO) * adorigin.x + (-LM) * adorigin.y);
+
+    expodr1 = expodorigin * adm1.x;
+    expodm1 = expodorigin * adm1.y;
+
+    float l = length(delpos) * (1.0 / MARNUM);
+
+    for (float j = 1.0; j <= MARNUM; j++) {
+        marpos += l * marvec;
+
+        r2 = dot(marpos, marpos);
+        PoL = dot(marpos, -sunvec);
+
+        adm0 = adm1;
+        adm1 = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
+        admsum += (adm0 + adm1) * 0.5 * l;  //不能延迟常量计算
+
+        vec2 adssum = atmads(marpos, sunvec, PoL, vec3(adm1, r2));
+
+        vec2 ad = adssum + admsum;
+        vec3 od = RO * ad.x + LM * ad.y;
+        vec3 expod = exp(-od);
+
+        expodr0 = expodr1;
+        expodr1 = expod * adm1.x;
+        marsumr += (expodr0 + expodr1) * l;
+
+        expodm0 = expodm1;
+        expodm1 = expod * adm1.y;
+        marsumm += (expodm0 + expodm1) * l;
+    }
+
+    //延迟常量计算
+    marsumr *= 0.5;
+    marsumm *= 0.5;
+
+    float c = dot(sunvec, marvec);
+    float pr = getpr(c);
+    float pm = getpm3(c, pm3, g3);
+
+    insca = max(vec3(0.0), pr * LR * marsumr + pm * LM * marsumm);
+    outsca = max(vec3(0.0), exp((-RO) * admsum.x + (-LM) * admsum.y));
+}
+
+vec3 getsunlig(vec3 marpos, vec3 orisunlig, vec3 sunvec) {
+    const float R2_99995 = (EARTH_r * 0.99995) * (EARTH_r * 0.99995);
+
+    float r2 = dot(marpos, marpos);
+    float PoL = dot(marpos, -sunvec);
+
+    //不考虑地球遮挡
+    vec2 adm = exp(sqrt(r2) * (1.0 / vec2(-HR, -HM)) + (EARTH_R / vec2(HR, HM)));
+    vec2 adorigin = atmads(marpos, sunvec, PoL, vec3(adm, r2));
+    return max(vec3(0.0), orisunlig * exp((-RO) * adorigin.x + (-LM) * adorigin.y));
+}
+
+vec3 physicsun(vec3 skylig, vec3 orisunlig, vec3 sunvec, vec3 skyvec, const float r) {
+    // http://www.physics.hmc.edu/faculty/esin/a101/limbdarkening.pdf
+    const vec3 u = vec3(1.0, 1.0, 1.0);
+    const vec3 a = vec3(0.397, 0.503, 0.652);
+    /*const*/ float s = 2.0 * MATH_PI * (1.0 - cos(r));  // const会无法通过编译
+
+    float theta = acos(dot(skyvec, sunvec));
+
+    if (theta < r) {
+        vec3 lig = orisunlig / s;
+        // vec3 lig = orisunlig * 5.0; //物理不正确，但是好看
+        float mu = sqrt(1.0 - pow2(theta / r));
+        vec3 factor = u * pow(vec3(mu), a) + (1.0 - u);
+
+        return skylig + min(vec3(10000.0), lig * factor);
+    } else {
+        return skylig;
+    }
+}
+
+// cloud
+bool iscloud(vec3 p0) {
+    vec3 p1 = floor(p0 * (1.0 / 3.0));
+#if 1
+    bool t_b = hash21(p1.xz) > CLOUD_COVERAGE;
+    if (t_b)
+        t_b = hash21(p0.xz) > CLOUD_COVERAGE;
+    return t_b;
+#else
+    return (hash21(p1.xz) > CLOUD_COVERAGE) && (hash21(p0.xz) > CLOUD_COVERAGE);
+#endif
+}
+
+float closamsun(vec3 sampos, vec3 aabbsam, vec3 sunvec) {
+    float samsum = 0.0;
+    for (float k = 0.0; k < CLOSAMNUM && aabbsam.y == CLOUD_Y; k++) {
+        vec4 intsun = maraabb(sampos, sunvec, aabbsam, aabbsam + CLOSIZ);
+        samsum += iscloud(aabbsam) ? intsun.w : 0.0;
+        sampos += intsun.w * sunvec;
+        aabbsam += intsun.xyz * CLOSIZ;
+    }
+    return samsum;
+}
+
+#if CLOUD_TYPE == 2
+
+vec3 cloudrender_fast(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec, vec3 skylum, float gametime) {
+    vec3 marpos = campos;
+    marpos.xz += gametime * CLOUD_SPEED;
+    vec3 aabbmar = floor(marpos * (1.0 / CLOSIZ)) * CLOSIZ;
+
+    float marsum = 0.0;
+
+    for (float i = 0.0; i < 8.0 && aabbmar.y == CLOUD_Y; i++) {
+        vec4 intclo = maraabb(marpos, marvec, aabbmar, aabbmar + CLOSIZ);
+        if (iscloud(aabbmar))
+            marsum += intclo.w;
+        marpos += intclo.w * marvec;
+        aabbmar += intclo.xyz * CLOSIZ;
+    }
+
+    return skylig + (1.0 / (4.0 * MATH_PI)) * marsum * sunlig;
+}
+
+#elif CLOUD_TYPE == 3
+
+vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec, vec3 skylum, float gametime) {
+    vec3 marpos = campos;
+    marpos.xz += gametime * CLOUD_SPEED;
+    vec3 aabbmar = floor(marpos * (1.0 / CLOSIZ)) * CLOSIZ;
+
+    float marsum = 0.0;
+    float expsum = 0.0;
+
+    for (float i = 0.0; i < CLOINTNUM && aabbmar.y == CLOUD_Y; i++) {
+        vec4 intclo = maraabb(marpos, marvec, aabbmar, aabbmar + CLOSIZ);
+
+        if (iscloud(aabbmar)) {
+            float l = intclo.w * (1.0 / CLOMARNUM);
+            vec3 marstep = l * marvec;
+
+            vec3 sampos = marpos;
+
+            vec2 t0;
+            vec2 t1;
+            t1.x = closamsun(sampos, aabbmar, sunvec);
+            t1.y = exp(-CLOUD_LM * (marsum + t1.x));
+
+            float s = 0.0;
+
+            for (float j = 0.0; j < CLOMARNUM; j++) {
+                sampos += marstep;
+
+                t0 = t1;
+
+                t1.x = closamsun(sampos, aabbmar, sunvec);
+                float t_a = t1.x + l;
+                t1.y = exp(-CLOUD_LM * (marsum + t_a));
+                s += (t0.y - t1.y) / (t_a - t0.x);
+
+                marsum += l;
+            }
+            //延迟常量计算
+            expsum += s * l * (1.0 / CLOUD_LM);
+        }
+
+        marpos += intclo.w * marvec;
+        aabbmar += intclo.xyz * CLOSIZ;
+    }
+
+    float c = dot(sunvec, marvec);
+    float pm = getpm3(c, PM_CLOUD, G_CLOUD);
+
+    vec3 insca = sunlig * (pm * CLOUD_LM * expsum);
+    vec3 outsca = skylig * exp(-CLOUD_LM * marsum);
+
+    return insca + outsca + skylum;
+}
+
+#endif
+
+// origin shader light system
+
+//都是常量
+#define SUNLIG (gamma2line(SUNCOL) * SUNLIGHT_A)
+#define MOOLIG (gamma2line(MOOCOL) * MOOLIGHT_A)
+#define POILIG (gamma2line(POICOL) * POILIGHT_A)
+#define ENVLIG (gamma2line(ENVCOL) * ENVLIGHT_A)
+
+void setsunlig(const vec4 SUN_DIR, vec3 campos, out vec3 orisunlig, out vec3 sunlig, out vec3 sunvec) {
+    const mat2 M = mat2(cos(LATITUDE), sin(LATITUDE), -sin(LATITUDE), cos(LATITUDE));
+
+    sunvec = SUN_DIR.w > 0.5 ? SUN_DIR.xyz : -SUN_DIR.xyz;
+    bool day = sunvec.y > SUN_RISE_Y;
+    sunvec = day ? sunvec : -sunvec;
+    orisunlig = day ? SUNLIG : MOOLIG;
+    sunvec.yz = M * sunvec.yz;
+    sunvec.x += 0.00001;  // fix cloud turn black at daytime 6000
+    sunvec = normalize(sunvec);
+    sunlig = getsunlig(campos, orisunlig, sunvec);
+}
+
+void setsunlig(float t, vec3 campos, out vec3 orisunlig, out vec3 sunlig, out vec3 sunvec) {
+    const mat2 M = mat2(cos(LATITUDE), sin(LATITUDE), -sin(LATITUDE), cos(LATITUDE));
+
+    sunvec = vec3(cos(t), sin(t), 0.0);
+    bool day = sunvec.y > SUN_RISE_Y;
+    sunvec = day ? sunvec : -sunvec;
+    orisunlig = day ? SUNLIG : MOOLIG;
+    sunvec.yz = M * sunvec.yz;
+    sunvec.x += 0.00001;  // fix cloud turn black at daytime 6000
+    sunvec = normalize(sunvec);
+    sunlig = getsunlig(campos, orisunlig, sunvec);
+}
+
+vec3 getpoilig(vec2 uv1) {
+    return POILIG * uv1x2lig(uv1.x);
+}
+
+vec3 getenvlig(vec2 uv1, vec3 sunlig, vec3 orisunlig, vec3 marpos, vec3 sunvec, float ao) {
+    vec3 skylum = physicsky(vec3(0.0), marpos, vec3(0.0, 0.8, 0.6), orisunlig, sunvec);
+    vec3 blolum = sunlig * Diffuse_Lambert(GRAY) * uv1y2lig(uv1.y);
+    vec3 poilum = getpoilig(uv1) * Diffuse_Lambert(GRAY);
+    return (ENVLIG + poilum + mix(blolum, skylum, uv1y2lig(uv1.y) * 0.65)) * ao;
+}
+
+vec3 getearpos(vec3 campos, vec4 worpos) {
+    return campos + worpos.xyz * (1.0 / FOG_A);
+}
+
+void setfog(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 orisunlig, vec3 sunvec, vec2 uv1) {
+    atmsca(outsca, insca, stapos, marpos, sunvec, PM_FOG, G_FOG);
+    insca *= uv1.y;  //修复水面看水下的雾计算错误
+}
+
+vec3 skyfog(vec3 skylig, vec3 stapos, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunvec) {
+    vec3 insca;
+    vec3 outsca;
+    atmsca(outsca, insca, stapos, marpos, sunvec, PM_AIR, G_AIR);
+    return skylig * outsca + orisunlig * insca;
+}
+
+// TODO 传参采样次数
+vec3 skyrender(vec3 skylig, vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunlig, vec3 skylum, vec3 sunvec, vec4 thr, float gametime) {
+    const float R2 = EARTH_r * EARTH_r;
+    const float R2_Y = (EARTH_R + CLOUD_Y) * (EARTH_R + CLOUD_Y);
+    const float R2_YH = (EARTH_R + CLOUD_Y + CLOUD_H) * (EARTH_R + CLOUD_Y + CLOUD_H);
+
+#if CLOUD_TYPE == 1  // none
+    skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec);
+#else
+    bool needrendercloud = true;
+    vec3 reaclopos = campos;
+    vec3 fakclopos = campos;
+
+    float r2 = dot(campos, campos);
+    float PoV = dot(campos, -skyvec);
+
+    bool nohitear = nohitraybal(R2, r2, PoV);
+
+    if (campos.y < EARTH_R + CLOUD_Y) {
+        float clolen = intraybal(R2_Y, r2, PoV);
+
+        if ((clolen < -0.5) || (!nohitear)) {
+            needrendercloud = false;
+        } else {
+            reaclopos = campos + skyvec * clolen;
+            fakclopos = reaclopos;
+            fakclopos.y = CLOUD_Y + 0.00001;
+        }
+    } else if (campos.y > EARTH_R + CLOUD_Y + CLOUD_H) {
+        float clolen = intraybal(R2_YH, r2, PoV);
+        if (clolen < -0.5) {
+            needrendercloud = false;
+        } else {
+            reaclopos = campos + skyvec * clolen;
+            fakclopos = reaclopos;
+            fakclopos.y = CLOUD_Y + CLOUD_H - 0.00001;
+        }
+    }
+
+    if (needrendercloud) {
+        skylig = physicsky(skylig, reaclopos, skyvec, orisunlig, sunvec);
+#if CLOUD_TYPE == 2
+        skylig = cloudrender_fast(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
+#elif CLOUD_TYPE == 3
+        skylig = cloudrender(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
+#endif
+        skylig = skyfog(skylig, reaclopos, campos, skyvec, orisunlig, sunvec);
+    } else {
+        skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec);
+    }
+
+#endif
+    return skylig;
+}
+
+int getblockcode(float a) {
+    int c = int(a * 255.0 + 0.1);
+    return c == 0x00 ? 0xFF : c;
+}
+
+vec3 getblonor(sampler2D texture_0, vec2 uv0, vec3 wornor, mat3 invTBN) {
+    vec4 texcol_o = textureLod(texture_0, uv0, 0.0);
+    vec4 texcol_r = textureLod(texture_0, uv0 + vec2(NORMAL_MAP_W / TEXSIZW, 0.0), 0.0);
+    vec4 texcol_l = textureLod(texture_0, uv0 - vec2(NORMAL_MAP_W / TEXSIZW, 0.0), 0.0);
+    vec4 texcol_u = textureLod(texture_0, uv0 - vec2(0.0, NORMAL_MAP_W / TEXSIZH), 0.0);
+    vec4 texcol_d = textureLod(texture_0, uv0 + vec2(0.0, NORMAL_MAP_W / TEXSIZH), 0.0);
+
+    float h_o = srgb2y(texcol_o.rgb);
+    float h_r = srgb2y(texcol_r.rgb);
+    float h_l = srgb2y(texcol_l.rgb);
+    float h_u = srgb2y(texcol_u.rgb);
+    float h_d = srgb2y(texcol_d.rgb);
+
+    vec2 dxyh = vec2(h_r - h_l, h_u - h_d);
+    vec2 maxh = vec2(max(h_r, h_l), max(h_u, h_d));
+
+    float dx = (abs(h_o - maxh.x) < 0.00001) ? dxyh.x : 0.0;
+    float dy = (abs(h_o - maxh.y) < 0.00001) ? dxyh.y : 0.0;
+
+    return invTBN * normalize(vec3(NORMAL_MAP_STRENGTH * vec2(dx, dy), 1.0));
+}
+
+vec3 getblonor_a(sampler2D texture_0, vec2 uv0, vec3 wornor, mat3 invTBN) {
+    vec4 texcol_o = textureLod(texture_0, uv0, 0.0);
+    vec4 texcol_r = textureLod(texture_0, uv0 + vec2(NORMAL_MAP_W / TEXSIZW, 0.0), 0.0);
+    vec4 texcol_l = textureLod(texture_0, uv0 - vec2(NORMAL_MAP_W / TEXSIZW, 0.0), 0.0);
+    vec4 texcol_u = textureLod(texture_0, uv0 - vec2(0.0, NORMAL_MAP_W / TEXSIZH), 0.0);
+    vec4 texcol_d = textureLod(texture_0, uv0 + vec2(0.0, NORMAL_MAP_W / TEXSIZH), 0.0);
+
+    int c_o = getblockcode(texcol_o.a);
+    int c_r = getblockcode(texcol_r.a);
+    int c_l = getblockcode(texcol_l.a);
+    int c_u = getblockcode(texcol_u.a);
+    int c_d = getblockcode(texcol_d.a);
+
+    float h_o = ((c_o & 0x10) != 0) ? srgb2y(texcol_o.rgb) : 1.0;
+    float h_r = ((c_r & 0x10) != 0) ? srgb2y(texcol_r.rgb) : 1.0;
+    float h_l = ((c_l & 0x10) != 0) ? srgb2y(texcol_l.rgb) : 1.0;
+    float h_u = ((c_u & 0x10) != 0) ? srgb2y(texcol_u.rgb) : 1.0;
+    float h_d = ((c_d & 0x10) != 0) ? srgb2y(texcol_d.rgb) : 1.0;
+
+    vec2 dxyh = vec2(h_r - h_l, h_u - h_d);
+    vec2 maxh = vec2(max(h_r, h_l), max(h_u, h_d));
+
+    float dx = (abs(h_o - maxh.x) < 0.00001) ? dxyh.x : 0.0;
+    float dy = (abs(h_o - maxh.y) < 0.00001) ? dxyh.y : 0.0;
+
+    return invTBN * normalize(vec3(NORMAL_MAP_STRENGTH * vec2(dx, dy), 1.0));
+}
+
+float watvor(vec2 p) {
+    float m = 2.0;
+
+    vec2 b = round(p);
+    for (float i = -1.0; i <= 0.0; i++)
+        for (float j = -1.0; j <= 0.0; j++) {
+            vec2 c = b + vec2(i, j);
+            vec2 h = c + (hash22(c) * 0.8 + 0.1);
+            m = min(distance(p, h), m);
+        }
+
+    return m;
+}
+
+vec2 watpos(vec4 chupos, float t) {
+    return chupos.xz + 0.125 * valpar_2D(chupos.xz * 4.0 + t);  //仅扰动坐标，无需使用柏林噪声
+}
+
+float getwatlig(vec4 chupos, vec2 uv1, float t) {
+    float k = exp(-5.0 * (1.0 - uv1.y));
+#if WATER_TYPE == 2
+    k *= (0.5 + 8.0 * pow4(watvor(2.0 * watpos(chupos, t) + t)));
+#endif
+    return k;
+}
+
+vec3 getwatnor(mat3 tbn, vec4 chupos, float t) {
+    return tbn * normalize(vec3(0.02 * valpar_2D(2.0 * watpos(chupos, t) + t), 1.0));
+}
+
+vec3 getskyref(vec3 f0, float NoV, vec2 uv1, vec3 campos, vec3 V, vec3 N, vec3 L, vec3 orisunlig, vec3 closunlig, vec3 closkylum, vec4 thr, float t) {
+    return Fresnel_BRDF(f0, NoV) * uv1y2lig(uv1.y) * skyrender(vec3(0.0), campos, reflect(-V, N), orisunlig, closunlig, closkylum, L, thr, t);
+}
+
+// redstone_power
+vec3 render_redstone_power(vec3 oc, vec3 rwc) {
+    return oc + rwc;
+}
+
+vec3 render_redstone_power(vec3 oc, vec3 ic, vec3 bp, sampler2D t) {
+    vec3 rwc = vec3(0.0);
+    if (ic.b < 0.001 && all(lessThan(abs(0.5 - bp.xz), vec2(2.0 / 16.0)))) {
+        int pw = int(max(0.0, (25.0 * ic.r - 9.5)));
+        ivec2 os = ivec2(pw * 32 + 8, 8);
+        ivec2 ruv = ivec2(bp.xz * 64.0 - 24.0);
+        vec4 num = texelFetch(t, ruv + os, 0);
+        rwc += num.rrr;
+    }
+    return render_redstone_power(oc, rwc);
+}
+
+// chunk_bound
+vec3 render_chunk_bound_x(vec3 cc) {
+    cc = mix(cc, CHUNK_BOUND_COLOR_X.rgb, CHUNK_BOUND_COLOR_X.a);
+    return cc;
+}
+
+vec3 render_chunk_bound_y(vec3 cc) {
+    cc = mix(cc, CHUNK_BOUND_COLOR_Y.rgb, CHUNK_BOUND_COLOR_Y.a);
+    return cc;
+}
+
+vec3 render_chunk_bound_z(vec3 cc) {
+    cc = mix(cc, CHUNK_BOUND_COLOR_Z.rgb, CHUNK_BOUND_COLOR_Z.a);
+    return cc;
+}
+
+vec3 render_chunk_bound_o(vec3 cc) {
+    cc = mix(cc, CHUNK_BOUND_COLOR_O.rgb, CHUNK_BOUND_COLOR_O.a);
+    return cc;
+}
+
+vec3 render_chunk_bound(vec3 oc, vec3 cp, vec3 N, vec3 bp) {
+    vec3 cc = vec3(0.0);
+    bvec3 cb = greaterThan(abs(8.0 - cp.xyz), vec3(8.0 - 1.5 / 16.0));
+    bvec3 bb = greaterThan(abs(0.5 - bp.xyz), vec3(0.5 - 0.5 / 16.0));
+    if ((cb.x || cb.z) && (bb.x && bb.y || bb.y && bb.z || bb.z && bb.x)) {
+        bool flag = !(N.y > 0.9) && (cb.x && cb.y || cb.y && cb.z || cb.z && cb.x);
+        cc = (flag && (cb.x && cb.z)) ? render_chunk_bound_y(cc) : cc;
+        cc = (flag && (!cb.x && cb.z)) ? render_chunk_bound_x(cc) : cc;
+        cc = (flag && (cb.x && !cb.z)) ? render_chunk_bound_z(cc) : cc;
+        cc = (!flag || (!cb.x && !cb.z)) ? render_chunk_bound_o(cc) : cc;
+    }
+    return oc + cc;
+}
+
+// light_bound
+vec3 render_light_bound(vec3 outcol) {
+    return mix(outcol, LIGHT_BOUND_COLOR.rgb, LIGHT_BOUND_COLOR.a);
+}
+
+vec3 render_light_bound(vec3 outcol, vec2 uv1, vec3 N, vec3 blopos) {
+    bool lba = (uv1.x > 0.4375 && uv1.x < 0.498) && (N.y > 0.9) && any(greaterThan(abs(blopos.xz - 0.5), vec2(0.46875)));
+    return lba ? render_light_bound(outcol) : outcol.rgb;
+}
+
+// chunk animation
+vec3 chunk_animation(vec3 chupos, float rcfa) {
+    //谢谢茶宝!嘶哈嘶哈斯哈斯哈嘶哈嘶哈斯哈斯哈~
+    chupos.y += 12.0 * pow2(cos(-MATH_PI * rcfa + MATH_PI * 0.5));
+    chupos.y += 128.0 * (rcfa + log(1.0 - rcfa));
+    return chupos;
+}
