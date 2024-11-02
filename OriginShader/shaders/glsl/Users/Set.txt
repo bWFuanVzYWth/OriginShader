@@ -2,8 +2,6 @@
 //一部分翻譯來自16/10/2021 渣翻輕拍， 若有出入以中文為準
 //part of the translation comes from a random fan on 16/10/2021 should there is any discrepancy pls refer to the Chinese version
 
-
-
 //Origin Shader Perset
 //Origin Shader 预设
 
@@ -38,8 +36,6 @@
 //区块加载动画
 //chunk loading animation
 
-
-
 //Redstone Tools
 //红石能量显示
 
@@ -63,17 +59,6 @@
 //1 显示区块边界线
 //1 show chunk border
 
-
-
-
-
-
-
-
-
-
-
-
 ////////////////////////////////////////////////////////////////////
 
 //想清楚你自己在做什么，否则最好别修改以下参数
@@ -85,15 +70,6 @@
 //Think about what you're doing, or you'd better not change the following settings
 
 ////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
 
 #define MATH_PI 3.141592653589793
 #define MATH_E 2.718281828459045
@@ -103,10 +79,6 @@
 #define GRAY vec3(0.18, 0.18, 0.18)
 #define RGB vec3(0.7000, 0.5461, 0.4358)
 #define NaN 0.0
-
-
-
-
 
 //Developer options
 
@@ -118,16 +90,13 @@
 #define HASH22_TYPE 1
 
 #define FAST_MATH 0
+#define FAST_OPTICAL_DEPTH 0
 
 #define MOBILE 1
 
-#define TRY_MCPE_NETEASE 0
+#define TRY_MCPE_NETEASE 1
 
 //Developer options end
-
-
-
-
 
 //redstone tools
 
@@ -144,10 +113,6 @@
 
 //redtone tools end
 
-
-
-
-
 //PLANET_ATMOSPHERE
 
 #if PLANET_ATMOSPHERE
@@ -159,10 +124,6 @@
 //The default altitude of sky mode is used for atmosphere modeling, in km
 
 //PLANET_ATMOSPHERE END
-
-
-
-
 
 //SAMPLING_LEVEL
 
@@ -264,10 +225,6 @@
 
 //SAMPLING_LEVEL END
 
-
-
-
-
 //LIGHT_STYLE
 
 #define __LIGHT_STYLE LIGHT_STYLE
@@ -280,11 +237,11 @@
 #define POICOL vec3(1.0000, 0.5155, 0.2087)
 #define POILIGHT_A 14.0
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
-#define ENVLIGHT_A 0.01
+#define ENVLIGHT_A 0.02
 #define LATITUDE 0.2618
 #define SUN_R 0.009512
 #define SOFTSHADOW 3.0
-#define TONEMAP 2
+#define TONEMAP 3
 #define LUM 1.0
 #define FOG_A 16.0
 #define O3 (0.010 * vec3(3.426, 8.298, 0.356) * 0.06)
@@ -292,15 +249,14 @@
 #define LM (0.010 * vec3(2.000, 2.000, 2.000))
 #define USE_WATER_TEXTURE 0
 #define WATER_TYPE 2
-#define MILKY_WAY_LIGHT 0.05
+#define MILKY_WAY_LIGHT 1.0
 #define MILKY_WAY_DEC_X 0.65
 #define MILKY_WAY_DEC_Y 0.65
 #define MILKY_WAY_DEC_Z 0.65
-#define STAR_LIGHT 10.0
-#define PM_AIR vec3(0.10, 0.80, 0.10)
-#define G_AIR vec3(-0.15, 0.75, 0.99)
-#define PM_FOG vec3(0.10, 0.80, 0.10)
-#define G_FOG vec3(-0.15, 0.75, 0.15)
+#define PM_AIR vec4(0.5, 0.25, 0.15, 0.1)
+#define G_AIR vec4(0.0, 0.5, 0.8, 0.95)
+#define PM_FOG vec4(0.5, 0.25, 0.15, 0.1)
+#define G_FOG vec4(0.0, 0.5, 0.8, 0.95)
 #define RO (LR + O3)
 #define HR 8.0
 #define HM 1.2
@@ -317,7 +273,7 @@
 #define POICOL vec3(1.0000, 1.0000, 1.0000)
 #define POILIGHT_A 8.0
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
-#define ENVLIGHT_A 0.01
+#define ENVLIGHT_A 0.02
 #define LATITUDE 0.2618
 #define SUN_R 0.009512
 #define SOFTSHADOW 3.0
@@ -329,15 +285,14 @@
 #define LM (0.005 * vec3(2.000, 2.000, 2.000))
 #define USE_WATER_TEXTURE 0
 #define WATER_TYPE 2
-#define MILKY_WAY_LIGHT 0.05
+#define MILKY_WAY_LIGHT 1.0
 #define MILKY_WAY_DEC_X 0.65
 #define MILKY_WAY_DEC_Y 0.65
 #define MILKY_WAY_DEC_Z 0.65
-#define STAR_LIGHT 10.0
-#define PM_AIR vec3(0.10, 0.80, 0.10)
-#define G_AIR vec3(-0.15, 0.75, 0.99)
-#define PM_FOG vec3(0.10, 0.80, 0.10)
-#define G_FOG vec3(-0.15, 0.75, 0.15)
+#define PM_AIR vec4(0.5, 0.25, 0.15, 0.1)
+#define G_AIR vec4(0.0, 0.5, 0.8, 0.95)
+#define PM_FOG vec4(0.5, 0.25, 0.15, 0.1)
+#define G_FOG vec4(0.0, 0.5, 0.8, 0.95)
 #define RO (LR + O3)
 #define HR 8.0
 #define HM 1.2
@@ -354,7 +309,7 @@
 #define POICOL vec3(1.0000, 0.3814, 0.0588)
 #define POILIGHT_A 14.0
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
-#define ENVLIGHT_A 0.01
+#define ENVLIGHT_A 0.02
 #define LATITUDE 0.2618
 #define SUN_R 0.009512
 #define SOFTSHADOW 3.0
@@ -366,15 +321,14 @@
 #define LM (0.015 * vec3(2.000, 2.000, 2.000))
 #define USE_WATER_TEXTURE 0
 #define WATER_TYPE 2
-#define MILKY_WAY_LIGHT 0.05
+#define MILKY_WAY_LIGHT 1.0
 #define MILKY_WAY_DEC_X 0.65
 #define MILKY_WAY_DEC_Y 0.65
 #define MILKY_WAY_DEC_Z 0.65
-#define STAR_LIGHT 10.0
-#define PM_AIR vec3(0.10, 0.80, 0.10)
-#define G_AIR vec3(-0.15, 0.75, 0.99)
-#define PM_FOG vec3(0.10, 0.80, 0.10)
-#define G_FOG vec3(-0.15, 0.75, 0.15)
+#define PM_AIR vec4(0.5, 0.25, 0.15, 0.1)
+#define G_AIR vec4(0.0, 0.5, 0.8, 0.95)
+#define PM_FOG vec4(0.5, 0.25, 0.15, 0.1)
+#define G_FOG vec4(0.0, 0.5, 0.8, 0.95)
 #define RO (LR + O3)
 #define HR 8.0
 #define HM 1.2
@@ -419,12 +373,11 @@
 //TONEMAP
 //0 None
 //1 ACES
-//2 Filmic
+//2 AgX
 
 //LUM
 //全局亮度
 //Global brightness
-
 
 //FOG_A
 //能见度，数值越大雾越淡
@@ -459,10 +412,6 @@
 //MILKY_WAY_DEC_Z
 //银河旋转角，改变月亮和银河的相对位置，随便填
 //angle of rotation for milky way, changes relative position between the Moon and the milky way, any value will do
-
-//STAR_LIGHT
-//星星亮度倍率，在银河亮度的基础上提升星星亮度
-//multiple ratio of light intensity for stars, enhance stars’ luminance base on the milky way’s
 
 //PM_AIR
 //G_AIR
@@ -501,13 +450,7 @@
 //地球遮挡
 //Earth obscure
 
-
 //LIGHT_STYLE END
-
-
-
-
-
 
 #if CLOUD_TYPE == 1
 #define CLOUD_COVERAGE 0.0
@@ -533,10 +476,10 @@
 
 #elif CLOUD_TYPE == 3
 #define CLOUD_COVERAGE 0.7
-#define CLOUD_LM 4.5
+#define CLOUD_LM 2.0
 #define CLOUD_SPEED vec2(0.02, 0.05)
-#define PM_CLOUD vec3(0.10, 0.75, 0.15)
-#define G_CLOUD vec3(-0.15, 0.05, 0.95)
+#define PM_CLOUD vec4(0.15, 0.35, 0.35, 0.15)
+#define G_CLOUD vec4(0.5, 0.8, 0.95, 0.98)
 #define CLOUD_W (1.0)
 #define CLOUD_H (1.0 / 3.0)
 #define CLOUD_Y (3.0)
@@ -574,10 +517,6 @@
 //CLOSIZ
 //云的尺寸
 //cloud size
-
-
-
-
 
 #if ALPHA_PBR_STYLE == 1
 #define USE_NORMAL_MAP 1
@@ -641,36 +580,3 @@
 //硬编码常用材质F0，除非需要艺术化效果通常不应更改
 //material F0 commonly use in hard coding, usually should not be modify unless for aesthetic effect
 //F0 = ((n1-n2)/(n1+n2))^2, n(air) = 1.00029
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

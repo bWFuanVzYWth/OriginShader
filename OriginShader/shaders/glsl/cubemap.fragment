@@ -42,8 +42,6 @@ void main() {
 	if(isday < 0.5) { //night
 		vec4 skytex = texture(TEXTURE_0, uv);
 		skylig = gamma2line(skytex.rgb) * MILKY_WAY_LIGHT;
-		float maxrgb = max(max(skytex.r, skytex.g), skytex.b);
-		skylig *= 1.0 + pow4(maxrgb) * STAR_LIGHT;
 	}
 
 	skylig = physicsun(skylig, orisunlig, L, skyvec, SUN_R);

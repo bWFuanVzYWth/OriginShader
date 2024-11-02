@@ -241,6 +241,29 @@ mat3 getinvTBN(vec2 dxuv, vec2 dyuv, vec4 dxp, vec4 dyp, vec3 wornor) {
 
 // tonemap
 
+vec3 PBRNeutralToneMapping(vec3 color) {
+// Input color is non-negative and resides in the Linear Rec. 709 color space.
+// Output color is also Linear Rec. 709, but in the [0, 1] range.
+
+    const float startCompression = 0.8 - 0.04;
+    const float desaturation = 0.15;
+
+    float x = min(color.r, min(color.g, color.b));
+    float offset = x < 0.08 ? x - 6.25 * x * x : 0.04;
+    color -= offset;
+
+    float peak = max(color.r, max(color.g, color.b));
+    if(peak < startCompression)
+        return color;
+
+    const float d = 1. - startCompression;
+    float newPeak = 1. - d * d / (peak + d - startCompression);
+    color *= newPeak / peak;
+
+    float g = 1. - 1. / (desaturation * (peak - newPeak) + 1.);
+    return mix(color, newPeak * vec3(1, 1, 1), g);
+}
+
 vec3 FilmicTonemap(vec3 x) {
     const float A = 0.22;  // Shoulder Strength
     const float B = 0.30;  // Linear Strength
@@ -296,6 +319,8 @@ vec3 tonemap(vec3 c, float l) {
     return tonemapACES(c * l);
 #elif TONEMAP == 2
     return agx_tonemapping(c * l);
+#elif TONEMAP == 3
+    return PBRNeutralToneMapping(c * l);
 #else
     return c * vec3(l);
 #endif
@@ -765,10 +790,12 @@ float getpm(float c, float g) {
     return (3.0 / (8.0 * MATH_PI)) * ((1.0 - g * g) * (1.0 + c * c)) / ((2.0 + g * g) * pow3_2(1.0 + g * g - 2.0 * g * c));
 }
 
-float getpm3(float c, const vec3 pm3, const vec3 g3) {
-    vec3 tmp = (3.0 / (8.0 * MATH_PI)) * ((1.0 - g3 * g3) * (1.0 + c * c)) / ((2.0 + g3 * g3) * pow3_2(1.0 + g3 * g3 - 2.0 * g3 * c));
-    return dot(tmp, pm3);
+float getpm4(float c, const vec4 pm4, const vec4 g4) {
+    vec4 tmp = (3.0 / (8.0 * MATH_PI)) * ((1.0 - g4 * g4) * (1.0 + c * c)) / ((2.0 + g4 * g4) * pow3_2(1.0 + g4 * g4 - 2.0 * g4 * c));
+    return dot(tmp, pm4);
 }
+
+#if FAST_OPTICAL_DEPTH
 
 float chapmanApproximation(float X, float h, float cosZenith) {
     float c = sqrt(X + h);
@@ -805,7 +832,8 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
     return vec2(computeOpticalDepth(sampos, sunvec, HR), computeOpticalDepth(sampos, sunvec, HM));
 }
 
-/*
+#else
+
 vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
     vec2 adssum = vec2(0.0);
 
@@ -818,7 +846,7 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
     // adm.x adm.y r2
     vec3 t0;
 
-    for (float j = 1.0; j <= SAMNUM; j++) {
+    for(float j = 1.0; j <= SAMNUM; j++) {
         t0 = t1;
 
         t1.x = mpx - abs(em + dp * j);
@@ -838,7 +866,8 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
     //延迟常量计算
     return adssum * 0.5;
 }
-*/
+
+#endif
 
 vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunvec) {
     const float R2 = EARTH_r * EARTH_r;
@@ -941,7 +970,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 
     float c = dot(sunvec, marvec);
     float pr = getpr(c);
-    float pm = getpm3(c, PM_AIR, G_AIR);
+    float pm = getpm4(c, PM_AIR, G_AIR);
 
     vec3 insca = orisunlig * (pr * LR * marsumr + pm * LM * marsumm);
 #if EARTH_SHADOW
@@ -952,7 +981,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
     return max(vec3(0.0), outsca + insca);
 }
 
-void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunvec, vec3 pm3, vec3 g3) {
+void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunvec, vec4 pm4, vec4 g4) {
     const float R2 = EARTH_r * EARTH_r;
     const float R2_99995 = (EARTH_r * 0.99995) * (EARTH_r * 0.99995);
 
@@ -1015,7 +1044,7 @@ void atmsca(out vec3 outsca, out vec3 insca, vec3 stapos, vec3 marpos, vec3 sunv
 
     float c = dot(sunvec, marvec);
     float pr = getpr(c);
-    float pm = getpm3(c, pm3, g3);
+    float pm = getpm4(c, pm4, g4);
 
     insca = max(vec3(0.0), pr * LR * marsumr + pm * LM * marsumm);
     outsca = max(vec3(0.0), exp((-RO) * admsum.x + (-LM) * admsum.y));
@@ -1144,7 +1173,7 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
     }
 
     float c = dot(sunvec, marvec);
-    float pm = getpm3(c, PM_CLOUD, G_CLOUD);
+    float pm = getpm4(c, PM_CLOUD, G_CLOUD);
 
     vec3 insca = sunlig * (pm * CLOUD_LM * expsum);
     vec3 outsca = skylig * exp(-CLOUD_LM * marsum);
