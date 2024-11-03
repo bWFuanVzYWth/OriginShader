@@ -11,11 +11,11 @@
 //0 关闭太空模式
 //0 Space Mode Off
 
-#define SAMPLING_LEVEL 3
+#define SAMPLING_LEVEL 4
 //1 low
 //2 medium
 //3 high
-//4 static
+//4 placebo
 
 #define LIGHT_STYLE 1
 //1 default
@@ -90,11 +90,10 @@
 #define HASH22_TYPE 1
 
 #define FAST_MATH 0
-#define FAST_OPTICAL_DEPTH 0
 
 #define MOBILE 1
 
-#define TRY_MCPE_NETEASE 1
+#define TRY_MCPE_NETEASE 0
 
 //Developer options end
 
@@ -134,11 +133,12 @@
 #endif
 
 #if __SAMPLING_LEVEL == 1
-#define SAMNUM 2.0
-#define MARNUM 2.0
-#define CLOINTNUM  6.0
-#define CLOSAMNUM  3.0
-#define CLOMARNUM  3.0
+#define FAST_OPTICAL_DEPTH 1
+#define SAMNUM 2.5
+#define MARNUM 4.5
+#define CLOINTNUM  8.5
+#define CLOSAMNUM  2.5
+#define CLOMARNUM  4.5
 #define FAST_SOFTSHADOW 1
 #define FAST_BSDF 1
 #define FAST_PERLIN 1
@@ -146,11 +146,12 @@
 #define FAST_VORO 1
 
 #elif __SAMPLING_LEVEL == 2
-#define SAMNUM 2.0
-#define MARNUM 6.0
-#define CLOINTNUM  8.0
-#define CLOSAMNUM  3.0
-#define CLOMARNUM  6.0
+#define FAST_OPTICAL_DEPTH 1
+#define SAMNUM 3.5
+#define MARNUM 6.5
+#define CLOINTNUM  12.5
+#define CLOSAMNUM  3.5
+#define CLOMARNUM  6.5
 #define FAST_SOFTSHADOW 1
 #define FAST_BSDF 0
 #define FAST_PERLIN 1
@@ -158,23 +159,25 @@
 #define FAST_VORO 0
 
 #elif __SAMPLING_LEVEL == 3
-#define SAMNUM 3.0
-#define MARNUM 9.0
-#define CLOINTNUM  12.0
-#define CLOSAMNUM  6.0
-#define CLOMARNUM  12.0
+#define FAST_OPTICAL_DEPTH 1
+#define SAMNUM 4.5
+#define MARNUM 8.5
+#define CLOINTNUM  16.5
+#define CLOSAMNUM  4.5
+#define CLOMARNUM  8.5
 #define FAST_SOFTSHADOW 1
 #define FAST_BSDF 0
 #define FAST_PERLIN 0
-#define FAST_VALUE 1
+#define FAST_VALUE 0
 #define FAST_VORO 0
 
 #elif __SAMPLING_LEVEL == 4
-#define SAMNUM 16.0
-#define MARNUM 16.0
-#define CLOINTNUM  16.0
-#define CLOSAMNUM  16.0
-#define CLOMARNUM  16.0
+#define FAST_OPTICAL_DEPTH 1
+#define SAMNUM 5.5
+#define MARNUM 10.5
+#define CLOINTNUM  20.5
+#define CLOSAMNUM  5.5
+#define CLOMARNUM  10.5
 #define FAST_SOFTSHADOW 0
 #define FAST_BSDF 0
 #define FAST_PERLIN 0

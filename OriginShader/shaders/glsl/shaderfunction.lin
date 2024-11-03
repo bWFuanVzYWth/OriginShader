@@ -183,7 +183,7 @@ mat4 inverse_mat4(mat4 m) {
 
 // geometry
 
-vec4 maraabb(vec3 o, vec3 v, vec3 a, vec3 b) {
+vec4 raymarch_AABB(vec3 o, vec3 v, vec3 a, vec3 b) {
 #if FAST_MATH  //这种写法会造成噪点和精度丢失
     vec3 t_0 = 1.0 / v;
     vec3 t_1 = -o * t_0;
@@ -205,7 +205,7 @@ vec4 maraabb(vec3 o, vec3 v, vec3 a, vec3 b) {
 
 //完整的射线与球求交
 //大部分时候都可以预计算中间变量并简化逻辑，此函数仅用于理解
-float intraybal(float r, vec3 p, vec3 d) {
+float raycast_sphere(float r, vec3 p, vec3 d) {
     float r2 = r * r;
     float l = dot(d, -p);
     float p2 = dot(p, p);
@@ -215,20 +215,20 @@ float intraybal(float r, vec3 p, vec3 d) {
 }
 
 //球心在原点
-float intraybal(float R2, float r2, float PoD) {
+float raycast_sphere(float R2, float r2, float PoD) {
     float t = PoD * PoD + R2;
     float q = sqrt(t - r2);
     return ((r2 > R2 && PoD < 0.0) || t < r2) ? -1.0 : (R2 > r2 ? q : -q) + PoD;
 }
 
 //球心在原点且只求解距离
-float lenraybal(float R2, float r2, float PoD) {
+float raycast_sphere_length(float R2, float r2, float PoD) {
     float q = sqrt(PoD * PoD + R2 - r2);
     return (R2 > r2 ? q : -q) + PoD;
 }
 
 //球心在原点且只进行相交测试
-bool nohitraybal(float R2, float r2, float PoD) {
+bool raycast_sphere_test(float R2, float r2, float PoD) {
     return ((r2 > R2 && PoD < 0.0) || PoD * PoD + R2 < r2);
 }
 
@@ -249,8 +249,8 @@ vec3 PBRNeutralToneMapping(vec3 color) {
     const float startCompression = 0.8 - 0.04;
     const float desaturation = 0.15;
 #else
-    const float startCompression = 0.7 - F0;
-    const float desaturation = 1.0;
+    const float startCompression = 0.8 - F0;
+    const float desaturation = 0.15;
 #endif
 
     float x = min(color.r, min(color.g, color.b));
@@ -606,11 +606,11 @@ float uv1y2lig(float uv1y) {
 
 // TODO 目前还不能进行侧面检测，还需要进一步减少误判
 bool isunderwater(vec3 n, vec2 uv1, vec4 cp, vec4 tc, vec4 vc) {
-    return n.y > 0.9                                             // normal
-    && uv1.y < 0.9                                        // sunlight
-    && abs((2.0 * cp.y - 15.0) / 16.0 - uv1.y) < 0.00002  // depth
-    && !equ3(tc.rgb)                                      // stone
-    && (equ3(vc.rgb) || vc.a < 0.00001)                   // grass
+    return n.y > 0.9                                           // normal
+    && uv1.y < 0.9                                             // sunlight
+    && abs((2.0 * cp.y - 15.0) / 16.0 - uv1.y) < 0.00002    // depth
+    && !equ3(tc.rgb)                                        // stone
+    && (equ3(vc.rgb) || vc.a < 0.00001)                     // grass
     && abs(fract(cp.y) - 0.5) > 0.00001;                  // slab
 }
 
@@ -861,7 +861,7 @@ vec2 atmads(vec3 sampos, vec3 sunvec, float PoL, vec3 t1) {
         t1.z = r * r;
 
         PoL = dot(sampos, -sunvec);
-        float l = lenraybal(t1.z, t0.z, PoL);
+        float l = raycast_sphere_length(t1.z, t0.z, PoL);
 
         sampos += l * sunvec;
 
@@ -898,7 +898,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
     vec3 expodm1 = vec3(0.0);
 
 #if PLANET_ATMOSPHERE
-    if(nohitraybal(R2, t1.z, PoL))
+    if(raycast_sphere_test(R2, t1.z, PoL))
 #endif
     {
         //第零个采样点的视线方向步进距离为0，只需计算沿阳光方向从太空直接到摄像机的光程
@@ -941,7 +941,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
         t1.z = r * r;
 
         PoV = dot(marpos, -marvec);
-        float l = lenraybal(t1.z, t0.z, PoV);
+        float l = raycast_sphere_length(t1.z, t0.z, PoV);
 
         marpos += l * marvec;
 
@@ -951,7 +951,7 @@ vec3 physicsky(vec3 skylig, vec3 marpos, vec3 marvec, vec3 orisunlig, vec3 sunve
 
 #if PLANET_ATMOSPHERE
         //如果直接用EARTH_R会有奇怪的条纹
-        if(nohitraybal(R2_99995, t1.z, PoL))
+        if(raycast_sphere_test(R2_99995, t1.z, PoL))
 #endif
         {
             vec2 adssum = atmads(marpos, sunvec, PoL, t1);
@@ -1095,7 +1095,7 @@ bool iscloud(vec3 p0) {
 float closamsun(vec3 sampos, vec3 aabbsam, vec3 sunvec) {
     float samsum = 0.0;
     for(float k = 0.0; k < CLOSAMNUM && aabbsam.y == CLOUD_Y; k++) {
-        vec4 intsun = maraabb(sampos, sunvec, aabbsam, aabbsam + CLOSIZ);
+        vec4 intsun = raymarch_AABB(sampos, sunvec, aabbsam, aabbsam + CLOSIZ);
         samsum += iscloud(aabbsam) ? intsun.w : 0.0;
         sampos += intsun.w * sunvec;
         aabbsam += intsun.xyz * CLOSIZ;
@@ -1113,7 +1113,7 @@ vec3 cloudrender_fast(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 s
     float marsum = 0.0;
 
     for(float i = 0.0; i < 8.0 && aabbmar.y == CLOUD_Y; i++) {
-        vec4 intclo = maraabb(marpos, marvec, aabbmar, aabbmar + CLOSIZ);
+        vec4 intclo = raymarch_AABB(marpos, marvec, aabbmar, aabbmar + CLOSIZ);
         if(iscloud(aabbmar))
             marsum += intclo.w;
         marpos += intclo.w * marvec;
@@ -1134,7 +1134,7 @@ vec3 cloudrender(vec3 skylig, vec3 campos, vec3 marvec, vec3 sunlig, vec3 sunvec
     float expsum = 0.0;
 
     for(float i = 0.0; i < CLOINTNUM && aabbmar.y == CLOUD_Y; i++) {
-        vec4 intclo = maraabb(marpos, marvec, aabbmar, aabbmar + CLOSIZ);
+        vec4 intclo = raymarch_AABB(marpos, marvec, aabbmar, aabbmar + CLOSIZ);
 
         if(iscloud(aabbmar)) {
             float l = intclo.w * (1.0 / CLOMARNUM);
@@ -1250,44 +1250,44 @@ vec3 skyrender(vec3 skylig, vec3 campos, vec3 skyvec, vec3 orisunlig, vec3 sunli
 #if CLOUD_TYPE == 1  // none
     skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec);
 #else
-    bool needrendercloud = true;
-    vec3 reaclopos = campos;
-    vec3 fakclopos = campos;
+    bool need_render_cloud = true;
+    vec3 real_cloud_position = campos;
+    vec3 fake_cloud_position = campos;
 
     float r2 = dot(campos, campos);
     float PoV = dot(campos, -skyvec);
 
-    bool nohitear = nohitraybal(R2, r2, PoV);
 
     if(campos.y < EARTH_R + CLOUD_Y) {
-        float clolen = intraybal(R2_Y, r2, PoV);
+        float cloud_distance = raycast_sphere(R2_Y, r2, PoV);
 
-        if((clolen < -0.5) || (!nohitear)) {
-            needrendercloud = false;
+        bool no_hit_earth = raycast_sphere_test(R2, r2, PoV);
+        if((cloud_distance < -0.5) || (!no_hit_earth)) {
+            need_render_cloud = false;
         } else {
-            reaclopos = campos + skyvec * clolen;
-            fakclopos = reaclopos;
-            fakclopos.y = CLOUD_Y + 0.00001;
+            real_cloud_position = campos + skyvec * cloud_distance;
+            fake_cloud_position = real_cloud_position;
+            fake_cloud_position.y = CLOUD_Y + 0.00001;
         }
     } else if(campos.y > EARTH_R + CLOUD_Y + CLOUD_H) {
-        float clolen = intraybal(R2_YH, r2, PoV);
-        if(clolen < -0.5) {
-            needrendercloud = false;
+        float cloud_distance = raycast_sphere(R2_YH, r2, PoV);
+        if(cloud_distance < -0.5) {
+            need_render_cloud = false;
         } else {
-            reaclopos = campos + skyvec * clolen;
-            fakclopos = reaclopos;
-            fakclopos.y = CLOUD_Y + CLOUD_H - 0.00001;
+            real_cloud_position = campos + skyvec * cloud_distance;
+            fake_cloud_position = real_cloud_position;
+            fake_cloud_position.y = CLOUD_Y + CLOUD_H - 0.00001;
         }
     }
 
-    if(needrendercloud) {
-        skylig = physicsky(skylig, reaclopos, skyvec, orisunlig, sunvec);
+    if(need_render_cloud) {
+        skylig = physicsky(skylig, real_cloud_position, skyvec, orisunlig, sunvec);
 #if CLOUD_TYPE == 2
-        skylig = cloudrender_fast(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
+        skylig = cloudrender_fast(skylig, fake_cloud_position, skyvec, sunlig, sunvec, skylum, gametime);
 #elif CLOUD_TYPE == 3
-        skylig = cloudrender(skylig, fakclopos, skyvec, sunlig, sunvec, skylum, gametime);
+        skylig = cloudrender(skylig, fake_cloud_position, skyvec, sunlig, sunvec, skylum, gametime);
 #endif
-        skylig = skyfog(skylig, reaclopos, campos, skyvec, orisunlig, sunvec);
+        skylig = skyfog(skylig, real_cloud_position, campos, skyvec, orisunlig, sunvec);
     } else {
         skylig = physicsky(skylig, campos, skyvec, orisunlig, sunvec);
     }
