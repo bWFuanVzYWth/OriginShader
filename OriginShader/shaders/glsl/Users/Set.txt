@@ -245,7 +245,7 @@
 #define SUN_R 0.009512
 #define SOFTSHADOW 3.0
 #define TONEMAP 2
-#define LUM 1.0
+#define LUM 0.7
 #define FOG_A 16.0
 #define O3 (0.010 * vec3(3.426, 8.298, 0.356) * 0.06)
 #define LR (0.010 * vec3(0.580, 1.350, 3.310))

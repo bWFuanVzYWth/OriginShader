@@ -253,6 +253,41 @@ mat3 getinvTBN(vec2 dxuv, vec2 dyuv, vec4 dxp, vec4 dyp, vec3 wornor) {
 
 // tonemap
 
+vec3 linear_srgb_to_oklab(vec3 c) {
+    vec3 lms = vec3(0.4122214708, 0.2119034982, 0.0883024619) * c.r + vec3(0.5363325363, 0.6806995451, 0.2817188376) * c.g + vec3(0.0514459929, 0.1073969566, 0.6299787005) * c.b;
+    vec3 lms_ = pow(lms, vec3(1.0 / 3.0));
+    return vec3(0.2104542553, 1.9779984951, 0.0259040371) * lms_.x + vec3(0.7936177850, -2.4285922050, 0.7827717662) * lms_.y + vec3(-0.0040720468, 0.4505937099, -0.8086757660) * lms_.z;
+}
+
+vec3 oklab_to_linear_srgb(vec3 c) {
+    vec3 lms_ = c.x + vec3(0.3963377774, -0.1055613458, -0.0894841775) * c.y + vec3(0.2158037573, -0.0638541728, -1.2914855480) * c.z;
+    vec3 lms = lms_ * lms_ * lms_;
+    return vec3(4.0767416621, -1.2684380046, -0.0041960863) * lms.x + vec3(-3.3077115913, 2.6097574011, -0.7034186147) * lms.y + vec3(0.2309699292, -0.3413193965, 1.7076147010) * lms.z;
+}
+
+float soft_clip(float x) {
+    const float s = -0.875;
+    return (1.0 + x - sqrt(1.0 - 2.0 * s * x + x * x)) / (1.0 + s);
+}
+
+vec3 oklab_tone_mapping(vec3 color) {
+    const vec3 oklab_white = vec3(1.0, 0.0, 0.0);
+
+    float max_rgb = max(max(color.r, color.g), color.b);
+
+    vec3 oklab = linear_srgb_to_oklab(color);
+    vec3 oklab_anchor = linear_srgb_to_oklab(color / max_rgb);
+
+    if(oklab.x > oklab_anchor.x) {
+        float k = soft_clip(oklab.x - oklab_anchor.x);
+        oklab = mix(oklab_anchor, oklab_white, k);
+    }
+
+    color = oklab_to_linear_srgb(oklab);
+
+    return vec3(color);
+}
+
 vec3 PBRNeutralToneMapping(vec3 color) {
 // Input color is non-negative and resides in the Linear Rec. 709 color space.
 // Output color is also Linear Rec. 709, but in the [0, 1] range.
@@ -344,17 +379,19 @@ vec3 tonemapACES(vec3 color) {
     return (color * (A * color + B)) / (color * (C * color + D) + E);
 }
 
-vec3 tonemap(vec3 c, float l) {
-#if TONEMAP == 1
-    return tonemapACES(c * l);
-#elif TONEMAP == 2
-    return agx_tonemapping(c * l);
-#elif TONEMAP == 3
-    return PBRNeutralToneMapping(c * l);
-#else
-    return c * vec3(l);
-#endif
-}
+// vec3 tonemap(vec3 c, float l) {
+// #if TONEMAP == 1
+//     return tonemapACES(c * l);
+// #elif TONEMAP == 2
+//     return agx_tonemapping(c * l);
+// #elif TONEMAP == 3
+//     return PBRNeutralToneMapping(c * l);
+// #elif TONEMAP == 4
+//     return oklab_tone_mapping(c * l);
+// #else
+//     return c * vec3(l);
+// #endif
+// }
 
 // color
 float gamma2line(float x) {
@@ -374,7 +411,17 @@ vec3 line2gamma(vec3 x) {
 }
 
 vec3 lig2col(vec3 lig) {
-    return line2gamma(tonemap(lig, LUM));
+#if TONEMAP == 1
+    return line2gamma(tonemapACES(lig * LUM));
+#elif TONEMAP == 2
+    return agx_tonemapping(lig * LUM);
+#elif TONEMAP == 3
+    return line2gamma(PBRNeutralToneMapping(lig * LUM));
+#elif TONEMAP == 4
+    return line2gamma(oklab_tone_mapping(lig * LUM));
+#else
+    return line2gamma(lig * LUM);
+#endif
 }
 
 //使用前注意区分色彩空间
