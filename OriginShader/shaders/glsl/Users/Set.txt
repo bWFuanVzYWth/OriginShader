@@ -134,11 +134,11 @@
 
 #if __SAMPLING_LEVEL == 1
 #define FAST_OPTICAL_DEPTH 1
-#define SAMNUM 2.5
-#define MARNUM 4.5
-#define CLOINTNUM  8.5
-#define CLOSAMNUM  2.5
-#define CLOMARNUM  4.5
+#define SAMNUM 2.0
+#define MARNUM 4.0
+#define CLOINTNUM  8.0
+#define CLOSAMNUM  2.0
+#define CLOMARNUM  4.0
 #define FAST_SOFTSHADOW 1
 #define FAST_BSDF 1
 #define FAST_PERLIN 1
@@ -147,11 +147,11 @@
 
 #elif __SAMPLING_LEVEL == 2
 #define FAST_OPTICAL_DEPTH 1
-#define SAMNUM 3.5
-#define MARNUM 6.5
-#define CLOINTNUM  12.5
-#define CLOSAMNUM  3.5
-#define CLOMARNUM  6.5
+#define SAMNUM 3.0
+#define MARNUM 6.0
+#define CLOINTNUM  12.0
+#define CLOSAMNUM  3.0
+#define CLOMARNUM  6.0
 #define FAST_SOFTSHADOW 1
 #define FAST_BSDF 0
 #define FAST_PERLIN 1
@@ -160,11 +160,11 @@
 
 #elif __SAMPLING_LEVEL == 3
 #define FAST_OPTICAL_DEPTH 1
-#define SAMNUM 4.5
-#define MARNUM 8.5
-#define CLOINTNUM  16.5
-#define CLOSAMNUM  4.5
-#define CLOMARNUM  8.5
+#define SAMNUM 4.0
+#define MARNUM 8.0
+#define CLOINTNUM  16.0
+#define CLOSAMNUM  4.0
+#define CLOMARNUM  8.0
 #define FAST_SOFTSHADOW 1
 #define FAST_BSDF 0
 #define FAST_PERLIN 0
@@ -173,11 +173,11 @@
 
 #elif __SAMPLING_LEVEL == 4
 #define FAST_OPTICAL_DEPTH 1
-#define SAMNUM 5.5
-#define MARNUM 10.5
-#define CLOINTNUM  20.5
-#define CLOSAMNUM  5.5
-#define CLOMARNUM  10.5
+#define SAMNUM 8.0
+#define MARNUM 16.0
+#define CLOINTNUM  32.0
+#define CLOSAMNUM  8.0
+#define CLOMARNUM  16.0
 #define FAST_SOFTSHADOW 0
 #define FAST_BSDF 0
 #define FAST_PERLIN 0
@@ -234,18 +234,18 @@
 
 #if __LIGHT_STYLE == 1
 #define SUNCOL vec3(1.0000, 1.0000, 1.0000)
-#define SUNLIGHT_A 14.0
+#define SUNLIGHT_A 12.0
 #define MOOCOL vec3(1.0000, 1.0000, 1.0000)
 #define MOOLIGHT_A 0.2
 #define POICOL vec3(1.0000, 0.5155, 0.2087)
-#define POILIGHT_A 1.0
+#define POILIGHT_A 3.0
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
 #define ENVLIGHT_A 0.02
 #define LATITUDE 0.2618
 #define SUN_R 0.009512
 #define SOFTSHADOW 3.0
 #define TONEMAP 2
-#define LUM 0.7
+#define LUM 1.0
 #define FOG_A 16.0
 #define O3 (0.010 * vec3(3.426, 8.298, 0.356) * 0.06)
 #define LR (0.010 * vec3(0.580, 1.350, 3.310))
@@ -274,7 +274,7 @@
 #define MOOCOL vec3(1.0000, 1.0000, 1.0000)
 #define MOOLIGHT_A 0.2
 #define POICOL vec3(1.0000, 1.0000, 1.0000)
-#define POILIGHT_A 8.0
+#define POILIGHT_A 3.0
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
 #define ENVLIGHT_A 0.02
 #define LATITUDE 0.2618
@@ -306,17 +306,17 @@
 
 #elif __LIGHT_STYLE == 3
 #define SUNCOL vec3(1.0000, 1.0000, 1.0000)
-#define SUNLIGHT_A 14.0
+#define SUNLIGHT_A 12.0
 #define MOOCOL vec3(1.0000, 1.0000, 1.0000)
 #define MOOLIGHT_A 0.2
 #define POICOL vec3(1.0000, 0.3814, 0.0588)
-#define POILIGHT_A 14.0
+#define POILIGHT_A 3.0
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
 #define ENVLIGHT_A 0.02
 #define LATITUDE 0.2618
 #define SUN_R 0.009512
 #define SOFTSHADOW 3.0
-#define TONEMAP 1
+#define TONEMAP 2
 #define LUM 1.0
 #define FOG_A 16.0
 #define O3 (0.010 * vec3(3.426, 8.298, 0.356) * 0.06)
@@ -522,7 +522,7 @@
 //cloud size
 
 #if ALPHA_PBR_STYLE == 1
-#define USE_NORMAL_MAP 1
+#define USE_NORMAL_MAP 0
 #define NORMAL_MAP_FIX 1
 #define NORMAL_MAP_STRENGTH 1.0
 #define NORMAL_MAP_W 1.5

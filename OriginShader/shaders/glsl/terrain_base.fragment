@@ -189,7 +189,7 @@ void main() {
 			vec3 sunsca = sunlig * scattering_BSDF(BaseColor);
 			vec3 poisca = poilig * scattering_BSDF(BaseColor);
 
-			outcol.a = F0_WATER.g + line2gamma(lrgb2y(tonemap(skyref + sunsca + poisca, LUM))); //要进行一次blend，用.a而不是.rgb控制反射的强度
+			outcol.a = F0_WATER.g + (srgb2y(lig2col(skyref + sunsca + poisca))); //要进行一次blend，用.a而不是.rgb控制反射的强度
 			skyref /= gamma2line(outcol.a);
 			sunref /= gamma2line(outcol.a);
 
@@ -321,7 +321,7 @@ void main() {
 			vec3 sunsca = sunlig * scattering_BSDF(BaseColor);
 			vec3 poisca = poilig * scattering_BSDF(BaseColor);
 
-			outcol.a = texcol.a + line2gamma(lrgb2y(tonemap(skyref, LUM))); //要进行一次blend，用.a而不是.rgb控制反射的强度
+			outcol.a = texcol.a + (srgb2y(lig2col(skyref))); //要进行一次blend，用.a而不是.rgb控制反射的强度
 			skyref /= gamma2line(outcol.a);
 			sunref /= gamma2line(outcol.a);
 
