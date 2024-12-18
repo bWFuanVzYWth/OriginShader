@@ -238,13 +238,13 @@
 #define MOOCOL vec3(1.0000, 1.0000, 1.0000)
 #define MOOLIGHT_A 0.2
 #define POICOL vec3(1.0000, 0.5155, 0.2087)
-#define POILIGHT_A 3.0
+#define POILIGHT_A 12.0
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
 #define ENVLIGHT_A 0.02
 #define LATITUDE 0.2618
 #define SUN_R 0.009512
 #define SOFTSHADOW 3.0
-#define TONEMAP 2
+#define TONEMAP 1
 #define LUM 1.0
 #define FOG_A 16.0
 #define O3 (0.010 * vec3(3.426, 8.298, 0.356) * 0.06)
@@ -274,7 +274,7 @@
 #define MOOCOL vec3(1.0000, 1.0000, 1.0000)
 #define MOOLIGHT_A 0.2
 #define POICOL vec3(1.0000, 1.0000, 1.0000)
-#define POILIGHT_A 3.0
+#define POILIGHT_A 12.0
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
 #define ENVLIGHT_A 0.02
 #define LATITUDE 0.2618
@@ -310,13 +310,13 @@
 #define MOOCOL vec3(1.0000, 1.0000, 1.0000)
 #define MOOLIGHT_A 0.2
 #define POICOL vec3(1.0000, 0.3814, 0.0588)
-#define POILIGHT_A 3.0
+#define POILIGHT_A 12.0
 #define ENVCOL vec3(1.0000, 1.0000, 1.0000)
 #define ENVLIGHT_A 0.02
 #define LATITUDE 0.2618
 #define SUN_R 0.009512
 #define SOFTSHADOW 3.0
-#define TONEMAP 2
+#define TONEMAP 1
 #define LUM 1.0
 #define FOG_A 16.0
 #define O3 (0.010 * vec3(3.426, 8.298, 0.356) * 0.06)
